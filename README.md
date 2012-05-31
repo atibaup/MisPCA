@@ -9,7 +9,7 @@ This code has been tested on GNU Octave Version 3.2.4 with the following package
 
       control *|  1.0.11 |
       
-miscellaneous *|  1.0.11 | 
+      miscellaneous *|  1.0.11 | 
 
         optim *|  1.0.17 | 
         
