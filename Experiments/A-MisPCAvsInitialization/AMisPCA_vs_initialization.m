@@ -1,9 +1,13 @@
 %% FMisPCA vs Initialization
+
 addpath(genpath('../../Utilities'))
+
 clear all;
 
-if matlabpool('size') == 0
-    matlabpool open 4;
+if ~exist("OCTAVE_VERSION","builtin")
+	if matlabpool('size') == 0
+	    matlabpool open 4;
+	end
 end
 
 Nrndm=4*5;
@@ -33,7 +37,7 @@ for l=1:NpointsDmax
     for k=1:NpointsSNR
                
         % Parallelizable for (deactivated for OCTAVE compatibility) 
- for i=1:Nrndm
+	 for i=1:Nrndm
             % Generate misaligned signals with random delays
             [X,SigmaAv,Fo,dini,Sigma,D]=GenerateFMisPCAData(p,n,S,F,SNR(k),r,dmax,Spacing,[],H);
             
@@ -69,7 +73,7 @@ for l=1:NpointsDmax
     for k=1:NpointsSNR
                
         % Parallelizable for (deactivated for OCTAVE compatibility) 
- for i=1:Nrndm
+	 for i=1:Nrndm
             % Generate misaligned signals with random delays
             [X,SigmaAv,Fo,dini,Sigma,D]=GenerateFMisPCAData(p,n,S,F,SNR(k),r,dmax,Spacing,[],H);
             
@@ -99,7 +103,7 @@ for l=1:NpointsDmax
     for k=1:NpointsSNR
                
         % Parallelizable for (deactivated for OCTAVE compatibility) 
- for i=1:Nrndm
+	 for i=1:Nrndm
             % Generate misaligned signals with random, delays
             [X,SigmaAv,Fo,dini,Sigma,D]=GenerateFMisPCAData(p,n,S,F,SNR(k),r,dmax,Spacing,[],H);
             
@@ -129,5 +133,4 @@ s3 = MeanSTDLatexTable([SNR',meanAMisPCA3],stdAMisPCA3,'%.2g')
 s4 = MeanSTDLatexTable([SNR',meanBFMisPCA],stdBFMisPCA,'%.2g')
 
 save(['Results/MisPCA_vs_Initialization_',date,'.mat']);
-
 
