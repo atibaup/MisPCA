@@ -1,10 +1,12 @@
 close all
-clear all
+more off;
+clear all;
 
 N_CPU=4;
-
-if matlabpool('size') == 0
-    matlabpool('open', N_CPU) ;
+if ~exist("OCTAVE_VERSION","builtin")
+        if matlabpool('size') == 0
+            matlabpool open 4;
+        end
 end
 
 addpath(genpath('../../Utilities'));

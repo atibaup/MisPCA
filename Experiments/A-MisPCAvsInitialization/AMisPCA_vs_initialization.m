@@ -1,7 +1,7 @@
 %% FMisPCA vs Initialization
 
 addpath(genpath('../../Utilities'))
-
+more off;
 clear all;
 
 if ~exist("OCTAVE_VERSION","builtin")
@@ -31,11 +31,14 @@ SNR=round(linspace(-10,30,NpointsSNR));
 
 [dummy,dummy1,H]=GenerateFMisPCAData(p,n,1,F,SNR(1),r,1,Spacing,[],[]);
 
+
 theta=1;
+disp(sprintf('MisPCA versus Initialization, theta= %d \n',theta))
+
 for l=1:NpointsDmax
     dmax=dmaxVec(l)       
     for k=1:NpointsSNR
-               
+	fprintf('\t dmax=%d/%d, SNR=%d/%d \n',l,NpointsDmax,k,NpointsSNR)               
         % Parallelizable for (deactivated for OCTAVE compatibility) 
 	 for i=1:Nrndm
             % Generate misaligned signals with random delays
@@ -66,11 +69,13 @@ stdBFMisPCA=squeeze(std(CorrBFMisPCA,0,2));
 
 %% theta=1/2;
 theta=1/2;
+fprintf('MisPCA versus Initialization, theta= %d \n',theta)
 for l=1:NpointsDmax
 
     dmax=dmaxVec(l)
        
     for k=1:NpointsSNR
+        fprintf('\t dmax=%d/%d, SNR=%d/%d \n',l,NpointsDmax,k,NpointsSNR)
                
         % Parallelizable for (deactivated for OCTAVE compatibility) 
 	 for i=1:Nrndm
@@ -96,11 +101,14 @@ stdAMisPCA2=squeeze(std(CorrMisPCA2,0,2));
 
 %% theta=0;
 theta=0;
+fprintf('MisPCA versus Initialization, theta= %d \n',theta)
 for l=1:NpointsDmax
 
     dmax=dmaxVec(l)
        
     for k=1:NpointsSNR
+
+        fprintf('\t dmax=%d/%d, SNR=%d/%d \n',l,NpointsDmax,k,NpointsSNR)
                
         % Parallelizable for (deactivated for OCTAVE compatibility) 
 	 for i=1:Nrndm
@@ -132,5 +140,6 @@ s2 = MeanSTDLatexTable([SNR',meanAMisPCA2],stdAMisPCA2,'%.2g')
 s3 = MeanSTDLatexTable([SNR',meanAMisPCA3],stdAMisPCA3,'%.2g')
 s4 = MeanSTDLatexTable([SNR',meanBFMisPCA],stdBFMisPCA,'%.2g')
 
+fprintf('MisPCA versus Initialization: saving results... \n',theta)
 save(['Results/MisPCA_vs_Initialization_',date,'.mat']);
 

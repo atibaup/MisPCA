@@ -24,7 +24,7 @@ opts.tol=1e-2;
 if S>1
     C=zeros(Ngrid,1);
     for i=1:Ngrid
-        if mod(i,round(Ngrid/3))==0;    disp(['Iter ',num2str(i),'/',num2str(Ngrid)]); end;
+        if mod(i,round(Ngrid/3))==0;    disp(['(BF_MisPCA) Iter ',num2str(i),'/',num2str(Ngrid)]); end;
         SigmaAv=zeros(p);
         for k=1:S
             Aux=circshift(Sigma{k},[-Grid(i,k),-Grid(i,k)]);

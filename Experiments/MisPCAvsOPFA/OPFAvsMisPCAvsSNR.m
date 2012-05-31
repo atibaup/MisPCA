@@ -1,14 +1,17 @@
-close all
-clear all
+close all^M
+more off;
+clear all;
 
-N_CPU=4;
-
-if matlabpool('size') == 0
-    matlabpool('open', N_CPU) ;
+N_CPU=4;^M
+if ~exist("OCTAVE_VERSION","builtin")
+        if matlabpool('size') == 0
+            matlabpool open 4;
+        end
 end
 
-addpath(genpath('../../Utilities'));
-addpath(genpath('../../../OPFA_package/Utilities'));
+addpath(genpath('../../Utilities'));^M
+addpath(genpath('../../../OPFA_package/Utilities'));^M
+
 
 p=50;
 f_o=2;
