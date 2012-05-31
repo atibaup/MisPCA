@@ -1,0 +1,134 @@
+function [Signature,ClusterMembers]=TemporalSignatures(Clusters,F,X,Masks,dopt_MisPCA,Lambdas,Genes,GeneNames,GenesAffy,Options,TimeVec)
+n=size(Masks{1},1);
+k=size(F,2);
+Nclusters=length(unique(Clusters));
+S=length(X);
+Loadings=[];
+Data=[];
+DataR=[];
+AlignedData=[];
+ClustersAux=[];
+nPlots=1;
+TimeIndx=Options.Padding+1:(Options.n-Options.Padding);
+TimeVec=TimeVec(TimeIndx);
+%figure;
+Xr=cell(S,1);
+for i=1:S
+    Fadj=zeros(n,k);
+    SubjDelays=[];
+    for j=1:k
+       SubjDelays=[SubjDelays,dopt_MisPCA{j}(i)]; 
+    end
+    SubjDelays=SubjDelays
+    for j=1:k
+         [T]=CreateTranslationMatrix(dopt_MisPCA{j}(i),n);
+         Fadj(:,j)= T*F(:,j);
+    end
+    %Fadj=Fadj*diag(Lambdas.^(1/2));
+    Fadj=Fadj(Masks{i}==1,:);
+    ProjOnF=(Fadj'*Fadj)\Fadj';
+    Loadings=[Loadings,ProjOnF*X{i}(:,Genes)];
+    Xr{i}=F(Masks{i}==1,:)*ProjOnF*X{i}(:,Genes);
+    Xr{i}=1/max(max(abs(Xr{i})))*Xr{i};
+    
+    Data(Masks{i}==1,:)=[Data,X{i}(:,Genes)];
+    DataR=[DataR,Xr{i}];
+    AlignedData=[AlignedData;Xr{i}];
+        
+%     subplot(ceil(S/2),4,nPlots);
+%     plot(X{i}(TimeIndx,Genes))
+%     title(strcat('Original Data (S=',num2str(i),')'));
+%     subplot(ceil(S/2),4,nPlots+1)
+%     plot(Xr{i}(TimeIndx,:))
+%     title('Data on the Aligned Space')
+    nPlots=nPlots+2;
+    ClustersAux=[ClustersAux;Clusters];
+end
+
+% compute clusters from aligned subspace
+% linkage='complete';
+% distance='euclidean';
+% Nclust=7
+% 
+% T = clusterdata(AlignedData','maxclust',Nclust,'distance',distance,'linkage',linkage); % 'median' seuclidean correlation
+% 
+% [SortedT,IndxSorted]=sort(T);
+% 
+% figure
+% subplot(2,1,1)
+% imagesc(AlignedData(:,IndxSorted))
+% subplot(2,1,2)
+% imagesc(SortedT')
+
+% ClustersAux=[];
+% for i=1:S
+%     ClustersAux=[ClustersAux;T];
+% end
+
+fid1=fopen(strcat('Results/Clustering/BackgroundGenes.txt'),'w');
+for i=1:length(GenesAffy)
+    fprintf(fid1,'%s \n',strrep(GenesAffy{i},'_at',''));
+end
+fclose(fid1);
+
+Nclust=Nclusters;
+T=Clusters;
+% figure
+ClusterMembers=cell(Nclust,1);
+fid=zeros(Nclust,1);
+for i=1:Nclust
+    fid(i)=fopen(strcat('Results/Clustering/Cluster_',num2str(i),'.txt'),'w');
+    ClusterMembers{i}.Ids=find(T==i);
+    ClusterMembers{i}.Genes=GeneNames(T==i);
+    ClusterMembers{i}.GenesAffy=GenesAffy(T==i);
+    for l=1:length( ClusterMembers{i}.GenesAffy)
+        fprintf(fid(i),'%s \n',strrep(ClusterMembers{i}.GenesAffy{l},'_at',''));
+    end
+    fclose(fid(i));
+    %     subplot(ceil(Nclust/2),2,i);
+    %     AvClust=zeros(length(TimeIndx),length(find(T==i)));
+    %     for j=1:S
+    %        AvClust= AvClust+1/S*Xr{i}(TimeIndx,T==i);
+    %     end
+    %     plot(AvClust);
+end
+
+
+figure('Name','Clusters on Aligned subspace')
+Signature=cell(Nclust,1);
+for i=1:Nclust
+    Signature{i}=DataR(TimeIndx,ClustersAux==i);
+    subplot(ceil(Nclust/2),2,i)
+    plot(TimeVec,Signature{i},'.r','LineWidth',1,'MarkerSize',1); hold on;
+    plot(TimeVec,mean(Signature{i},2),'-r','LineWidth',3); hold on;
+    VarSignature=var(Signature{i}');
+    StdSignature=sqrt(VarSignature);
+    plot(TimeVec,mean(Signature{i},2)+StdSignature','.-b','LineWidth',3); hold on;
+    plot(TimeVec,mean(Signature{i},2)-StdSignature','.-g','LineWidth',3); hold on;
+    axis([min(TimeVec), max(TimeVec), -1,1]);
+    ClusterTitle='';
+    for j=1:min(10,length(ClusterMembers{i}.Genes))
+        if j==1
+            ClusterTitle=[ClusterMembers{i}.Genes{j}];
+        else
+            ClusterTitle=[ClusterTitle,'-',ClusterMembers{i}.Genes{j}];
+        end
+    end
+    if length(ClusterMembers{i}.Genes)>10
+        ClusterTitle=[ClusterTitle,'- And ',num2str(length(ClusterMembers{i}.Genes)-10),' other'];
+    end
+    title(strcat('Cl-',num2str(i),' (',ClusterTitle,')'))
+end
+SignatureO=cell(Nclust,1);
+figure('Name','Clusters on Observed space')
+for i=1:Nclust
+    SignatureO{i}=Data(TimeIndx,ClustersAux==i);
+    subplot(ceil(Nclust/2),2,i)
+    plot(TimeVec,SignatureO{i},'.r','LineWidth',1,'MarkerSize',1); hold on;
+    plot(TimeVec,mean(SignatureO{i},2),'-r','LineWidth',3); hold on;
+    VarSignature=var(SignatureO{i}');
+    StdSignature=sqrt(VarSignature);
+    plot(TimeVec,mean(SignatureO{i},2)+StdSignature','.-b','LineWidth',3); hold on;
+    plot(TimeVec,mean(SignatureO{i},2)-StdSignature','.-g','LineWidth',3); hold on;
+    axis([min(TimeVec), max(TimeVec), -1,1]);
+end

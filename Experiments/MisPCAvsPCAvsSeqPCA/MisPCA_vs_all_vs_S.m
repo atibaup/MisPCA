@@ -1,0 +1,81 @@
+clear all;
+close all;
+
+addpath(genpath('../../Utilities'))
+
+NCPU=5;
+if matlabpool('size') ~= NCPU
+    if  matlabpool('size')>0
+        matlabpool close;
+    end
+    matlabpool('open', NCPU)
+end
+
+Nrndm=5*5;
+p=100; % time dimension
+n=10; % samples per replicate
+F=1;
+
+NpointsSNR=20;
+NpointsS=10;
+
+SNR=round(linspace(-10,30,NpointsSNR));
+r=round(p/30); 
+dmax=40; 
+Spacing=10;
+SVec=round(linspace(2,20,NpointsS));
+
+
+[Options]=Simulations_options(p,Spacing,dmax);
+Options.k=F;
+
+[dummy1,dummy2,H]=GenerateFMisPCAData(p,n,1,F,SNR(1),r,dmax,Spacing,[],[]);
+
+Corr=zeros(NpointsSNR,Nrndm,NpointsS);
+CorrMisPCA=zeros(NpointsSNR,Nrndm,NpointsS);
+CorrOr=zeros(NpointsSNR,Nrndm,NpointsS);
+CorrSeqPCA=zeros(NpointsSNR,Nrndm,NpointsS);
+
+for l=1:NpointsS
+    S=SVec(l);
+    fprintf(' S=%d (%d/%d)\n',S,l,NpointsS)
+    
+    Masks=cell(S,1);
+    for i=1:S
+        Masks{i}=ones(p,n);
+    end
+        
+    for k=1:NpointsSNR
+        
+        fprintf('\t SNR=%g (%d/%d)\n',SNR(k),k,NpointsSNR)
+        
+        % Parallelizable for (deactivated for OCTAVE compatibility) 
+ for i=1:Nrndm
+            % Generate misaligned signals with random delays
+            [X,SigmaAv,Fo,dini,Sigma,D]=GenerateFMisPCAData(p,n,S,F,SNR(k),r,dmax,Spacing,[],H);
+
+            % Joint PCA
+            [HPCA,LambdasPCA]=eigs(SigmaAv,F);   
+            Corr(k,i,l)=MinFactorsSubspaceDistance(Fo,HPCA);
+                                 
+            % Oracle PCA
+            [dhatOr,FhatOr]=OraclePCA(Sigma,F,dini);
+            CorrOr(k,i,l)=MinFactorsSubspaceDistance(Fo,FhatOr);
+
+%             % MisPCA
+            F_AMisPCA=FMisPCA(Sigma,Masks,Options);         
+            CorrMisPCA(k,i,l)=MinFactorsSubspaceDistance(Fo,F_AMisPCA);
+%             
+%             % Seq PCA
+            F_SMisPCA=SeqFMisPCA(Sigma,Options);    
+            CorrSeqPCA(k,i,l)=MinFactorsSubspaceDistance(Fo,F_SMisPCA);
+        end
+    end
+end
+
+save(['Results/MisPCA_vs_All_vs_S_F',num2str(F),'_.mat'])
+
+%% Find SNR point at which <h_est,h> >=Threshold and plot
+[h,h2]=PlotFMisPCAComparisonResults(Corr,CorrOr,CorrMisPCA,CorrSeqPCA,SVec*n,F,SNR,Nrndm,'n');
+saveas(h,['Figures/MisPCA_vs_All_vs_S',date,'_F',num2str(F),'_1.fig'],'fig');
+saveas(h2,['Figures/MisPCA_vs_All_vs_S',date,'_F',num2str(F),'_2.fig'],'fig');

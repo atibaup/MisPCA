@@ -1,0 +1,34 @@
+function [fig]=FindThresholdsAndAnnotate(UB,LB,eigMax,eigMaxT,PredictedEval,SNR,c)
+fig=figure;
+semilogy(SNR,mean(eigMax,2),'-or'); hold on;
+semilogy(SNR,mean(eigMaxT,2),'-xb'); hold on;
+semilogy(SNR,mean(LB,2),'-vg'); hold on;
+semilogy(SNR,mean(UB,2),'-^m'); hold on;
+%semilogy(SNR,mean(LB2,2),'-vk'); hold on;
+semilogy(SNR,mean(PredictedEval,2),'-*k'); hold on;
+
+dUB=abs(mean(UB,2)-sqrt(c)).^2;
+[minD1 indxmindUB]=min(dUB);
+dLB=abs(mean(LB,2)-sqrt(c)).^2;
+[minD2 indxmindLB]=min(dLB);
+dreal=abs(mean(eigMaxT,2)-sqrt(c)).^2;
+[minreal indxmindreal]=min(dreal);
+SnrTh1=SNR(indxmindUB);
+SnrTh2=SNR(indxmindLB);
+SnrTh=SNR(indxmindreal);
+
+
+line([SnrTh SnrTh] ,[min(mean(LB,2)) max(mean(UB,2))],'Color','r','LineWidth',3); hold on; %,'-or','MarkerSize',12,'LineWidth',3
+line([SnrTh1 SnrTh1] ,[min(mean(LB,2)) max(mean(UB,2))],'Color','g','LineWidth',3); hold on; %,'-or','MarkerSize',12,'LineWidth',3
+line([SnrTh2 SnrTh2] ,[min(mean(LB,2)) max(mean(UB,2))],'Color','b','LineWidth',3); hold on; %,'-or','MarkerSize',12,'LineWidth',3
+Y=1/2;
+X11=max(min((SnrTh1-min(SNR))/(max(SNR)-min(SNR)),1),0);
+X12=max(min((SnrTh1*9-min(SNR))/(max(SNR)-min(SNR)),1),0);
+X21=max(min((SnrTh2-min(SNR))/(max(SNR)-min(SNR)),1),0);
+X22=max(min((SnrTh2*1.1-min(SNR))/(max(SNR)-min(SNR)),1),0);
+txtar = annotation('textarrow',[X12,X11],[Y,Y],'String',['Phase Transition LB:',num2str(SnrTh1,2),'dB'],'FontSize',14);
+txtar = annotation('textarrow',[X22,X21],[Y,Y],'String',['Phase Transition UB:',num2str(SnrTh2,2),'dB'],'FontSize',14);
+semilogy(SNR ,sqrt(c)*ones(length(SNR),1),'.-b','LineWidth',1); hold on; %,'-or','MarkerSize',12,'LineWidth',3
+axis tight
+ylabel('Max Eigenvalue');
+xlabel('SNR')

@@ -1,0 +1,74 @@
+%% Load Data
+[sample,Symptoms,TimeVecOr]=LoadData(DataDir,Virus,OldOrNew,Options);
+
+%get rid of Affy probes
+AllGenes=sample.rownames(1:end-62)
+GenesSx=load(strcat(DataDir,'x568DEGenes.mat'));
+Genes2=GenesSx.DEGenes.Genes;
+
+[Options,OnsetTimesClock,Labels]=LoadSymptomsTable(SxOrAsx,Virus,OldOrNew,Symptoms,Options);
+
+Options.SubsMeanOnOff=1;
+[XAll,Masks,AllTimes,Samples,y,RowIdsAll,AllGenes,AllGenesAffy]=ExtractSubjectsRNAProfile_v2(sample,Options.SxSubjectIDs,Virus,AllGenes,0,Options.Padding,Options.SubsMeanOnOff);
+
+n=size(Masks{1},1);
+Options.S=length(XAll);
+if SxOrAsx==0
+    OnsetTimesClock=zeros(Options.S,1);
+end
+[OnsetTimes]=OnsetTimesFromClockTimes(Masks,TimeVecOr,OnsetTimesClock);
+
+dmax=8;
+Options.SxOrAsx=SxOrAsx;
+Options.Virus=Virus;
+Options.OldOrNew=OldOrNew;
+Options.n=n;
+Options.n_f=Options.n;
+Options.IndxCommon=1:(n-2*Padding);
+Options.dmax=dmax;
+Options.Padding=Padding;
+Options.FiguresOnOff=1;
+Options.FixedDelaysOnOff=FixedDelaysOnOff;
+
+Inoculation=0;
+%Times=Inoculation+[Padding+1:Padding+4;Padding+6:Padding+10;Padding+11:Padding+15;];
+Times=Inoculation+[Padding+1:Padding+5;Padding+11:Padding+15;];
+[Genes,GenesAffy,RowIds,X,SortedPv]=SelectTimeCourseGenesANOVA(AllGenes,AllGenesAffy,RowIdsAll,Times,XAll,Masks,p);
+
+Options.p=length(Genes);
+
+DEGenes=find(SortedPv<=1e-5)
+figure
+for i=1:Options.S
+    subplot(round(Options.S/2),2,i)
+    plot(X{i}(:,DEGenes))
+end
+
+%%
+ YSGenesClus1={'CD74','HLA-DMA','HLA-DPA1','HLA-DPB1','CCR5','CCL4','TBX21','IL10RA','CD244','ICAM2'}; % ASC is not there
+% 
+ YSGenesClus7={'SIGLEC7','SHC1','MAPK7','KIR2DL1','KIR2DS4','KIR3DL1','SERPINF1','CX3CR1','HLA-G','TNFRSF1B',...
+     'ITGB2','CTSD','RAC1','CD4'}; % ASC is not there
+ 
+ GenesUnion=union(YSGenesClus1,YSGenesClus7);
+IndxYSGenesClus1=[];
+for i=1:length(AllGenes)
+    for j=1:length(GenesUnion)
+    if strcmp(AllGenes{i},GenesUnion{j})
+    IndxYSGenesClus1(j)=i;
+    end
+    end
+end
+
+figure;
+AvX=zeros(Options.n,length(IndxYSGenesClus1));
+Weights=0;
+for i=1:Options.S
+ AvX(Masks{i}==1,:)=AvX(Masks{i}==1,:)+XAll{i}(:,IndxYSGenesClus1);
+ Weights=Weights+Masks{i};
+ subplot(Options.S,1,i);
+ plot(XAll{i}(:,IndxYSGenesClus1))
+end
+figure
+imagesc((diag(1./Weights)*AvX)')
+figure;plot((diag(1./Weights)*AvX))

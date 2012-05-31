@@ -1,0 +1,20 @@
+function [ F,SigmaAv,eigmax ] = EstimateF( d,Sigma )
+%ESTIMATEF Summary of this function goes here
+%   Detailed explanation goes here
+S=length(Sigma);
+p=size(Sigma{1},1);SigmaAv=zeros(p);
+for i=1:S
+    SigmaAv=SigmaAv+1/S*CreateTranslationMatrix(d(i),p)'*Sigma{i}*CreateTranslationMatrix(d(i),p);
+end
+% figure
+% for j=1:S
+%     subplot(S,1,j)
+%         plot(CreateTranslationMatrix(d(j),p)'*Sigma{j}*CreateTranslationMatrix(d(j),p)); hold on;
+% end
+
+SigmaAv=1/2*(SigmaAv+SigmaAv');
+
+opts.disp=0;
+ct
+[F,eigmax]=eigs(SigmaAv,1,'lm',opts);
+F=F;

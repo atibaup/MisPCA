@@ -1,0 +1,109 @@
+close all
+clear all
+[ret, name] = system('hostname');  
+if strcmp(cellstr(name),'PC-de-Arnau')
+    AddPathsLocal
+else
+    if matlabpool('size') == 0
+        matlabpool open 4; 
+    end
+    AddPathsArcadelt
+end
+%% Choose Data
+SxOrAsx=1; % '0' Asx, '1' Sx, '2' Other
+p=1000;
+Padding=0;
+Options.Padding=Padding;
+Virus='Z';%'W' (H1N1)/'Z'(H3N2)/'C'(HRV)
+OldOrNew='Old' % 'New' / 'New' depending on whether we want to work with Old/New challenge studies data
+FixedDelaysOnOff=0; % Fix all factor's delays to be the same or not.
+%% Load Data and Gene List
+LoadPHDData
+
+subj=6
+d = pdist(X{subj}','corr');
+CorrX=corr(X{subj});
+z = linkage(d,'complete');
+c = cluster(z,'maxclust',5);
+[t,i]=sort(c)
+figure; imagesc(CorrX(i,i))
+
+CorrXt=corr(X{subj}(:,c==5));
+figure; imagesc(CorrXt)
+break
+
+%% Initialization
+Options.f_o=3;
+Options.NpointsBeta=6;
+Options.NCV=6;
+Options.deltaTest=.05;
+Options.FixedDelaysOnOff=1;
+Options.Nrndm=4;
+Options.GridSize=1;
+Options.FiguresOnOff=0;
+
+
+[Results]=MisPCAwCV(X,Masks,Options)
+
+%break
+[PCAResults]=PCAwCV(X,Masks,Options)
+
+%% Save results 
+
+Results.Options=Options;
+Results.Data.Genes=Genes;
+Results.Data.GenesAffy=GenesAffy;
+Results.Data.GenesPv=SortedPv;
+Results.Data.X=X;
+Results.Data.Masks=Masks;
+Results.Data.y=y;
+Results.Data.TimeVecOr=TimeVecOr;
+Results.Data.Labels=Labels;
+Results.Data.OnsetTimes=OnsetTimes;
+Results.Data.OnsetTimesClock=OnsetTimesClock;
+%Results.PCA=PCAResults;
+
+if SxOrAsx==1
+  TypeFile='Sx';
+else
+  TypeFile='Asx';
+end
+
+save(strcat('Results/OPPCA_only',TypeFile,'_',strrep(date,'-','_'),'_p=',num2str(Options.p),'_',Virus,'_',OldOrNew,'.mat'), 'Results');
+
+%% Plot  results
+[Err,h]=OriginalVSReconstructed(Results.d,Results.F,X,X,Masks,Options.Padding,...
+    [1:p/10],[1:Options.S],1,Options.SxSubjectIDs,'',Genes,OnsetTimes,Results.Lambdas,TimeVecOr);
+
+break
+[Err,h]=OriginalVSReconstructed(PCAResults.d,PCAResults.F,X,X,Masks,Options.Padding,...
+    [1:100],[1:Options.S],1,Options.SxSubjectIDs,'',Genes,OnsetTimes,PCAResults.Lambdas,TimeVecOr);
+
+%% Cluster Analysis
+[A_misPCA,A_PCA]=ConcatLoadings(Results,PCAResults,Options);
+
+linkage='complete';
+distance='seuclidean';
+Nclust=5
+
+TMisPCA = clusterdata(A_misPCA,'maxclust',Nclust,'distance',distance,'linkage',linkage); 
+TPCA = clusterdata(A_PCA,'maxclust',Nclust,'distance',distance,'linkage',linkage); 
+
+GenesForClustering=1:Options.p;
+ClusterLoadingsOrResponses=1;
+Showclus=[1:5];
+[Signature,ClusterMembersMisPCA,XrMisPCA,AlignedDataMisPCA,T1]=TemporalSignatures(TMisPCA,Results.F,X,Masks,Results.d,Results.Lambdas,...
+    GenesForClustering,Genes,GenesAffy,Options,Results.Data.TimeVecOr,ClusterLoadingsOrResponses,FixedDelaysOnOff,Showclus);
+
+[SignaturePCA,ClusterMembersPCA,XrPCA,AlignedData,T2]=TemporalSignatures(TPCA,PCAResults.F,X,Masks,PCAResults.d,PCAResults.Lambdas,...
+    GenesForClustering,Genes,GenesAffy,Options,Results.Data.TimeVecOr,ClusterLoadingsOrResponses,FixedDelaysOnOff,Showclus);
+
+[Corr]=FindSignatureCorrespondance(Signature,SignaturePCA)  
+
+OrderClustersMisPCA=[1,2,5,3,4]; %[6,5,4,3,1,2];           
+OrderClustersPCA=[Corr(OrderClustersMisPCA)]; %1,2 
+Plot_MisPCAClusters(TMisPCA,Signature,Results.A,PCAResults.A,TimeVecOr,OrderClustersMisPCA,Options)
+
+
+            
+            

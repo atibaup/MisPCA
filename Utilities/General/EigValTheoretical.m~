@@ -1,0 +1,7 @@
+function [PredictedEval,eigMaxT]=EigValTheoretical(T,c,delays)
+eigMaxT=eigs(T,1,'lm'); %
+if eigMaxT>sqrt(c)
+    PredictedEval=(eigMaxT+1)*(1+c/eigMaxT);
+else
+    PredictedEval=(1+sqrt(c))^2;
+end

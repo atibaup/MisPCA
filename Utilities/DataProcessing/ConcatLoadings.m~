@@ -1,0 +1,24 @@
+function [A_misPCA,A_PCA,X]=ConcatLoadings(Results,PCAResults,Options,X)
+
+A_misPCA=[];
+A_PCA=[];
+AverageLoadings=Results.Aaligned{1};
+for i=1:Options.S
+    
+    % normalize
+    Aligned1=[];
+    Aligned2=[];
+    
+    for j=1:Options.p
+        Aligned1=[Aligned1,1/max(abs(Results.Aaligned{i}(:,j)))*Results.Aaligned{i}(:,j)];
+        Aligned2=[Aligned2,1/max(abs(PCAResults.Aaligned{i}(:,j)))*PCAResults.Aaligned{i}(:,j)];
+    end
+    AverageLoadings=AverageLoadings+1/Options.S*Aligned1;
+    A_misPCA=[A_misPCA,Aligned1'];
+    A_PCA=[A_PCA,Aligned2'];
+end
+
+NormAvloadings=diag(AverageLoadings'*AverageLoadings);
+
+figure; hist(NormAvloadings);
+

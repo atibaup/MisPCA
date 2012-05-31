@@ -1,0 +1,54 @@
+function [X,Mask,AllTimes,Samples,y,RowIds,Genes,GenesAffy]=ExtractSubjectsRNAProfile_v2(sample,subjectIDs,Virus,Genes,FigureOnOff,Padding,SubsMeanOnOff)
+% Same function as ExtractSubjectsRNAProfile but extracts
+% a mask of non-missing vlaues to deal with incomplete data.
+AllTimes=unique(sample.excelmat);
+p=length(Genes);
+if p<length(sample.blood.RNA.rownames)-62
+    [RowIds,Genes]=FindGenesRows(Genes,sample.blood.RNA.rownames);
+else
+    Genes=Genes;
+    RowIds=1:p;
+end
+GenesAffy=sample.rownames_affy(RowIds);
+for i=1:length(subjectIDs)
+    [SamplesAux]=ExtractSubjectRNASamples(sample,subjectIDs(i),Virus);
+    AllTimes=union(AllTimes,SamplesAux.SampleTimes);
+end
+AllTimes=AllTimes;
+Ntimes=length(AllTimes);
+k=1;
+for i=1:length(subjectIDs)
+    [SamplesAux]=ExtractSubjectRNASamples(sample,subjectIDs(i),Virus);
+    ColIds=SamplesAux.Samples;
+    X{k}=sample.blood.RNA.data(RowIds,ColIds)';
+    
+    [CommonTimes,ObsIndx{k},IB]=intersect(AllTimes,SamplesAux.SampleTimes);
+    X{k}=X{k}(IB,:);
+    n=size(X{k},1);
+    if n>0
+
+        if SubsMeanOnOff
+            X{k}=X{k}-repmat(mean(X{k},1),n,1);
+        end
+        p=size(X{k},2);
+        %for j=1:p
+            %X{k}(:,j)=1/sum(X{k}(:,j)).*X{k}(:,j);
+            %X{k}(:,j)=1/max(abs(X{k}(:,j))).*X{k}(:,j);
+        %end
+        %X{k}=1/max(max(abs(X{k})))*X{k};
+        Samples{k}=SamplesAux;
+        if FigureOnOff==1
+            figure
+            plot(X{k});
+        end
+        y(k)=SamplesAux.Label(length(SamplesAux.Label));
+        k=k+1
+    end
+end
+
+for i=1:(k-1)
+    X{i}=[repmat(X{i}(1,:),Padding,1); X{i}; repmat(X{i}(end,:),Padding,1)];
+    Mask{i}=zeros(Ntimes,1);
+    Mask{i}(ObsIndx{i},1)=ones(length(ObsIndx{i}),1);
+    Mask{i}=[ones(Padding,1);Mask{i};ones(Padding,1)];
+end

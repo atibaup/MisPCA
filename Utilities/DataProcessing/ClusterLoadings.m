@@ -1,0 +1,339 @@
+function [T,GeneClusters,GeneRowIds,h,Results]=ClusterLoadings(A_o,A_no,F,M_no,dhat,Nclust,GeneNames,X,linkage,distance,ClustersPlotted,SxorAsx,ChangePoint,RefFactor,TimeVec)
+
+S=length(X);
+for i=1:S
+    X{i}=1/max(max(X{i}))*X{i};
+end
+Nfact=size(A_o{1},1)+1;
+n=size(M_no,1);
+n_F=size(F,1);
+epsilon=n_F-n;
+epsilon1=round(epsilon/2);
+epsilon2=epsilon-epsilon1;
+f_no=size(M_no,2);
+p=size(A_o{1},2);
+Loadings=[];
+for i=1:S
+    Loadings=[Loadings, A_o{i}' A_no{i}'];
+end
+[maxval indx]=max(F(:,RefFactor));
+diff=indx-epsilon1-ChangePoint;
+%% Clustering
+Loadings=full(Loadings);
+T = clusterdata(Loadings,'maxclust',Nclust,'distance',distance,'linkage',linkage); % 'median' seuclidean correlation
+
+clims=[0,1];
+[Ts SrtIndx]=sort(T);
+
+    figure
+   imagesc(A_o{1}(:,T==1));
+
+h(1)=figure('Name','Loading Clusters');
+ax=subplot(1,Nfact+1,1);
+imagesc(Ts);
+set(ax,'FontSize',4)
+ylabel('Gene','FontSize',12,'FontWeight','bold')
+title('Cluster (color code)','FontSize',12,'FontWeight','bold')
+for i=1:Nfact-1
+    ax=subplot(1,Nfact+1,i+1);
+    Img=[];
+    i=i;
+    for j=1:S
+        Img=[Img A_o{j}(i,SrtIndx)'];
+    end
+    imagesc(Img)
+    set(ax,'FontSize',4)
+    title(strcat('Loadings, Factor:',num2str(i)),'FontSize',12,'FontWeight','bold')
+    if i==1
+       xlabel('Subject','FontSize',12,'FontWeight','bold')
+    end
+end
+ax=subplot(1,Nfact+1,Nfact+1);
+Img=[];
+if f_no>0
+for j=1:S
+    Img=[Img A_no{j}(1,SrtIndx)'];
+end
+end
+imagesc(Img,clims);
+set(ax,'FontSize',4)
+title('Loadings, Non-Ordered Factor','FontSize',12,'FontWeight','bold')
+suptitle('Hierarchical Clustering of the Loadings')
+
+%% Waveforms for each cluster
+Centroid=cell(1,Nclust);
+CentroidL=cell(1,Nclust);
+CentroidU=cell(1,Nclust);
+CentroidOr=cell(1,Nclust);
+ax=cell(1,Nclust);
+h(2)=figure('Name','Cluster Signatures');
+Maxy=0;
+Miny=+inf;
+% h6=figure
+% h7=figure
+% h8=figure
+% h9=figure
+
+%% DEtermine feature timepoints
+Timeref=ChangePoint;
+t=zeros(S,1);
+for j=1:S
+    t(j)=mod(dhat{j}(RefFactor)+Timeref,n_F)-epsilon1;
+end
+t=t;
+tmin=floor((max(t)-min(t))/2)+min(t);
+for i=1:Nclust
+    Indx=find(T==i);
+    Centroid{i}=zeros(n,1);
+    CentroidL{i}=zeros(n,1);
+    CentroidU{i}=zeros(n,1);
+    CentroidOr{i}=zeros(n,1);
+    Aux=[];
+    for j=1:S
+        MeanA_o=mean(A_o{j}(:,Indx),2);
+        MeanA_no=mean(A_no{j}(:,Indx),2);
+        AdjustedDelays=mod(dhat{j}-(t(j)-tmin),n_F); %mod(dhat{j}-min(dhat{j})+1,16); %ceil(mean(dhat{j}))
+        %AdjX=1/max(max((RecoveredX(MeanA_o,MeanA_no,F,M_no,AdjustedDelays))))*RecoveredX(MeanA_o,MeanA_no,F,M_no,AdjustedDelays);
+        AdjX=1/max(RecoveredX(MeanA_o,MeanA_no,F,M_no,AdjustedDelays))*RecoveredX(MeanA_o,MeanA_no,F,M_no,AdjustedDelays);
+        %AdjX=RecoveredX(MeanA_o,MeanA_no,F,M_no,AdjustedDelays);
+        
+        %         if i==3 
+%             AdjustedDelays=dhat{j}; %mod(dhat{j}-min(dhat{j})+1,16); %ceil(mean(dhat{j}))
+%             NAdjX=1/max(max((RecoveredX(MeanA_o,MeanA_no,F,M_no,AdjustedDelays))))*RecoveredX(MeanA_o,MeanA_no,F,M_no,AdjustedDelays);
+%            	AdjustedDelays=dhat{j}-min(dhat{j})+1; %mod(dhat{j}-min(dhat{j})+1,16); %ceil(mean(dhat{j}))
+%             AdjX=1/max(max((RecoveredX(MeanA_o,MeanA_no,F,M_no,AdjustedDelays))))*RecoveredX(MeanA_o,MeanA_no,F,M_no,AdjustedDelays);
+%             figure(h6)
+%             subplot(2,1,1)
+%             plot(NAdjX); hold on;
+%             title('Recovered')
+%             subplot(2,1,2)
+%             plot(AdjX); hold on;
+%             title('Time-Aligned Recovered')
+%         end
+        Aux=[Aux AdjX];%
+%         figure(h6)
+%         subplot(Nclust,1,i)
+%         plot(AdjX); hold on;
+%         CentroidOr{i}=CentroidOr{i}+1/(max(mean(X{j}(:,Indx),2)))*mean(X{j}(:,Indx),2);
+    end
+    Data{i}=Aux;
+    Centroid{i}=mean(Aux,2);
+    VarR{i}=std(Aux,0,2);
+    CentroidU{i}=Centroid{i}+VarR{i};
+    CentroidL{i}=Centroid{i}-VarR{i};
+    CentroidOr{i}=1/(S)*CentroidOr{i};
+    Maxy=max(Maxy,max(CentroidU{i}));
+    Miny=min(Miny,min(min(CentroidL{i})));
+    str2{i}(1)={''};
+    kl=1;
+    for l=1:min(length(Indx),8)
+        if length(strfind(GeneNames{Indx(l)},'AFFX'))==0
+            str2{i}(l)={GeneNames{Indx(l)}};
+        end       
+    end
+    if length(Indx)>5
+       str2{i}(l+1)={strcat('And +',num2str(length(Indx)-5),' more.')};
+    end
+    l=l;
+end
+Results.Centroid=Centroid;
+Results.CentroidU=CentroidU;
+Results.CentroidL=CentroidL;
+
+
+%% Waveforms for each cluster without model
+CentroidWOM=cell(1,Nclust);
+CentroidLWOM=cell(1,Nclust);
+CentroidUWOM=cell(1,Nclust);
+ax2=cell(1,Nclust);
+
+for i=1:Nclust
+    Indx=find(T==i);
+    CentroidWOM{i}=zeros(n,1);
+    CentroidLWOM{i}=zeros(n,1);
+    CentroidUWOM{i}=zeros(n,1);
+    Aux=[];
+    for j=1:S
+         %Aux=[Aux 1/(max(mean(X{j}(:,Indx),2)))*mean(X{j}(:,Indx),2)];
+        % for k=1:length()
+         Aux=[Aux 1/(max(mean(X{j}(:,Indx),2)))*mean(X{j}(:,Indx),2)];
+         %Aux=[Aux mean(X{j}(:,Indx),2)];
+%        if i==3
+%             figure(h7)
+%             plot(1/(max(mean(X{j}(:,Indx),2)))*mean(X{j}(:,Indx),2)); hold on;
+%         end
+    end
+    %figure(h5)
+    CentroidWOM{i}=mean(Aux,2);
+    VarO{i}=std(Aux,0,2);
+    CentroidUWOM{i}=CentroidWOM{i}+VarO{i};
+    CentroidLWOM{i}=CentroidWOM{i}-VarO{i};
+    %% Plot Recovered
+    ax{i}=subplot(2,Nclust,i*2-1);
+    plot(TimeVec,Centroid{i},'-r','LineWidth',2); hold on;
+    %plot(Data{i}); hold on;
+    %plot(CentroidOr{i},'-.b','LineWidth',.5); hold on;
+    xlabel('Time (hours)','FontSize',12,'FontWeight','bold')
+    ylabel('Expression level','FontSize',12,'FontWeight','bold')
+    plot(TimeVec,CentroidU{i},'o-g'); hold on;
+    hplot{i}=plot(TimeVec,CentroidL{i},'.-b'); hold on;
+    Maxy=max(Maxy,max(CentroidWOM{i}));
+    Miny=min(Miny,min(min(CentroidLWOM{i})));
+%     if i==3
+%         figure(h8)
+%         plot(Centroid{i},'-r','LineWidth',2); hold on;
+%         %plot(CentroidOr{i},'-.b','LineWidth',.5); hold on;
+%         xlabel('Time','FontSize',12,'FontWeight','bold')
+%         ylabel('Expression level','FontSize',12,'FontWeight','bold')        
+%         plot(CentroidU{i},'o-g'); hold on;
+%         plot(CentroidL{i},'.-b'); hold on;
+%         title(strcat('Cluster:',num2str(i),' (R) \sigma=',num2str(mean(VarR{i}),1)),'FontSize',12,'FontWeight','bold');
+%         axis tight
+%     end
+    %figure(h5)
+    set(ax{i},'FontSize',4);
+
+    title(strcat('Cluster:',num2str(i),' (R) \sigma=',num2str(mean(VarR{i}),1)),'FontSize',12,'FontWeight','bold');
+    x = get(hplot{i},'XData'); 		% Get the plotted data
+    y = get(hplot{i},'YData');
+    imin = find(min(y) == y);		% Find the index of the min and max
+    imax = find(max(x) == x);
+    text(max(x),min(y),str2{i},'HorizontalAlignment','right','FontSize',8,'FontWeight','bold');
+    %% Plot Original centroids
+    ax2{i}=subplot(2,Nclust,i*2);
+    plot(TimeVec,CentroidWOM{i},'-r','LineWidth',2); hold on;
+    xlabel('Time','FontSize',12,'FontWeight','bold')
+    plot(TimeVec,CentroidUWOM{i},'o-g'); hold on;
+    hplot{i}=plot(TimeVec,CentroidLWOM{i},'.-b'); hold on;
+    set(ax2{i},'FontSize',4);
+    title(strcat('Cluster:',num2str(i),' (O) \sigma=',num2str(mean(VarO{i}),1)),'FontSize',12,'FontWeight','bold');
+        if i==1
+        legend('Recovered','Upper CI','Lower CI','FontSize',14,'FontWeight','bold')
+    end
+%     if i==3
+%         figure(h9)
+%         plot(CentroidWOM{i},'-r','LineWidth',2); hold on;
+%         xlabel('Time','FontSize',12,'FontWeight','bold')
+%         plot(CentroidUWOM{i},'o-g'); hold on;
+%         plot(CentroidLWOM{i},'.-b'); hold on;
+%         title(strcat('Cluster:',num2str(i),' (O) \sigma=',num2str(mean(VarO{i}),1)),'FontSize',12,'FontWeight','bold');
+%         axis tight
+%     end
+    %figure(h5)
+end
+Results.CentroidWOM=CentroidWOM;
+Results.CentroidUWOM=CentroidUWOM;
+Results.CentroidLWOM=CentroidLWOM;
+Results.VarO=VarO;
+Results.Var=VarR;
+    if i==1
+        legend('Recovered','Upper CI','Lower CI','FontSize',14,'FontWeight','bold')
+    end
+%suptitle('Mean Recovered Expression Signatures for each cluster')
+% set axis to same standard
+Miny=Miny
+Maxy=Maxy;
+for i=1:Nclust
+    subplot(ax2{i});
+    axis([min(TimeVec) max(TimeVec) .95*Miny 1.05*Maxy]);
+    subplot(ax{i})
+    axis([min(TimeVec) max(TimeVec) .95*Miny 1.05*Maxy]);
+end
+suptitle('Mean Recovered Expression Signatures for each cluster');
+
+% figure('Name','Cluster Sequence across individuals')
+% if length(ClustersPlotted)==1
+%     ClustersPlotted=1:Nclust;
+% end
+% Aux=[];
+% colors=hsv(Nclust);
+% ClstLgd=cell(1,length(ClustersPlotted));
+% for j=1:S
+%     subplot(round(S/4),4,j)
+%     for i=1:length(ClustersPlotted)
+%         Indx=find(T==ClustersPlotted(i));       
+%         MeanA_o=mean(A_o{j}(:,Indx),2);       
+%         MeanA_no=mean(A_no{j}(:,Indx),2);
+%         Aux=1/max(RecoveredX(MeanA_o,MeanA_no,F,M_no,dhat{j}))*RecoveredX(MeanA_o,MeanA_no,F,M_no,dhat{j});
+%         plot(Aux,'-','Color',colors(i,:),'LineWidth',2); hold on;
+%         title(strcat('Subject:',num2str(j)))
+%         if j==1
+%            ClstLgd{i}=strcat('Cluster:',num2str(ClustersPlotted(i)));
+%         end
+%     end
+%     if j==1
+%         legend(ClstLgd)
+%     end
+% end
+
+
+h(3)=figure('Name','Aligned Cluster Sequence on all subject')
+subplot(2,1,2)
+Aux=[];
+colors=hsv(Nclust);
+ClstLgd=cell(1,length(ClustersPlotted));
+ProfileClust=cell(1,length(ClustersPlotted));
+for j=1:S
+   
+    delays=mod(dhat{j}-(t(j)-tmin),n); %dhat{j}-min(dhat{j})+diff;%mod(dhat{j}-min(dhat{j})+1,n);
+    if length(find(delays==0))>0
+        delays=delays+1;
+    end
+    %subplot(round(S/4),4,j)
+    for i=1:length(ClustersPlotted)
+        Indx=find(T==ClustersPlotted(i));       
+        MeanA_o=mean(A_o{j}(:,Indx),2);       
+        MeanA_no=mean(A_no{j}(:,Indx),2);
+        Aux=1/max(RecoveredX(MeanA_o,MeanA_no,F,M_no,delays))*RecoveredX(MeanA_o,MeanA_no,F,M_no,delays);
+        ProfileClust{i}=[ProfileClust{i}; Aux'];
+        %plot(Aux,'--','Color',colors(i,:),'LineWidth',.2); hold on;
+        if j==1
+           ClstLgd{i}=strcat('Cluster:',num2str(ClustersPlotted(i)));
+        end
+    end
+    if j==1
+        legend(ClstLgd,'FontSize',12,'FontWeight','bold');
+    end
+end
+for i=1:length(ClustersPlotted)
+   Mean= mean(ProfileClust{i},1);
+    plot(TimeVec,Mean,'-','Color',colors(i,:),'LineWidth',5); hold on;
+end
+ylabel('Normalized Expression Value')
+xlabel('Time')
+title('Average Time-Aligned Cluster Signatures (After Fitting)','FontSize',14);
+subplot(2,1,1)
+Aux=[];
+colors=hsv(Nclust);
+ClstLgd=cell(1,length(ClustersPlotted));
+ProfileClust=cell(1,length(ClustersPlotted));
+for j=1:S
+    %subplot(round(S/4),4,j)
+    for i=1:length(ClustersPlotted)
+       Indx=find(T==ClustersPlotted(i));     
+        Aux=1/(max(mean(X{j}(:,Indx),2)))*mean(X{j}(:,Indx),2);
+        ProfileClust{i}=[ProfileClust{i}; Aux'];
+        %plot(Aux,'--','Color',colors(i,:),'LineWidth',.1); hold on;
+        if j==1
+            ClstLgd{i}=strcat('Cluster:',num2str(ClustersPlotted(i)));
+        end
+    end
+    if j==1
+       legend(ClstLgd,'FontSize',12,'FontWeight','bold');
+    end
+end
+for i=1:length(ClustersPlotted)
+    Mean= mean(ProfileClust{i},1);
+    plot(TimeVec,Mean,'-','Color',colors(i,:),'LineWidth',5); hold on;
+end
+legend(ClstLgd,'FontSize',12,'FontWeight','bold');
+ylabel('Normalized Expression Value')
+xlabel('Time (hours)')
+title('Average Cluster Signatures (Before Fitting)','FontSize',14);
+%% Output gene clusters
+for i=1:Nclust
+    GeneClusters{i}=GeneNames(T==i);
+    GeneRowIds{i}=find(T==i);
+end
+    
+

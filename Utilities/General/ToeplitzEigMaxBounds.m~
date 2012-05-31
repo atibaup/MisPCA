@@ -1,0 +1,13 @@
+function [LB,UB]=ToeplitzEigMaxBounds(h,n)
+
+h=h(:)';
+p=length(h);
+hflip=fliplr(h(1:end));
+has=(h+hflip);
+symmh=[h,[0 hflip(1:end-1)]];
+
+W=dftmtx(2*n);
+predict=(W*symmh');
+predict=sort(predict,'descend');
+
+UB=1/2*(predict(1)+)

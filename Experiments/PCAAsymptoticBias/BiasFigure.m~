@@ -1,0 +1,76 @@
+addpath(genpath('../../Utilities'))
+close all
+
+%% f=1, flat signal
+p=300;
+n=1000;
+SNR=40;
+dmax=10;
+Spacing=1;
+H1=1/sqrt(p)*ones(p,1);
+[X1,S,~,d1]=GenerateFMisPCADataUnifMisalignment(p,n,1,SNR,0,dmax,Spacing,[],H1);
+[HPCA1,~]=eigs(S,1);
+[MinDist1,Dist1, PredDist1,C_mtx1,R_H1]=SubspaceDistanceAndPredictedDistance(HPCA1,H1,d1);
+
+%% f=3, orthogonal rectangular that stays orthogonal
+W=3
+H2=zeros(p,3);
+H2(:,1)=[ones(W,1);zeros(p-W,1)];
+H2(:,2)=circshift([ones(W,1);zeros(p-W,1)],31);
+H2(:,3)=circshift([ones(W,1);zeros(p-W,1)],62);
+H2=H2*diag(diag(1./sqrt(H2'*H2)));
+dmax=50;
+Spacing=2;
+[X2,S,~,d2]=GenerateFMisPCADataUnifMisalignment(p,n,3,SNR,0,dmax,Spacing,[3,2,1],H2);
+[HPCA2,~]=eigs(S,3);
+[MinDist2,Dist2, PredDist2,C_mtx2,R_H2,eigsRH2]=SubspaceDistanceAndPredictedDistance(HPCA2,H2,d2);
+
+break
+
+%% f=3, orthogonal rectangular that does not stay orthogonal
+H3=H2;
+dmax=30;
+Spacing=1;
+[X3,S,~,d3]=GenerateFMisPCADataUnifMisalignment(p,n,3,SNR,0,dmax,Spacing,[],H3);
+[HPCA3,~]=eigs(S,3);
+[MinDist3,Dist3, PredDist3,C_mtx3,R_H3]=SubspaceDistanceAndPredictedDistance(HPCA3,H3,d3);
+
+figure; 
+subaxis(3,3,1)
+plot(X1);
+ylabel('Magnitude','FontSize',12);
+
+subaxis(3,3,2)
+plot(H1,'-o');hold on;
+plot(HPCA1,'-x'); 
+title(num2str(Dist1))
+
+
+subaxis(3,3,4)
+plot(X2);
+ylabel('Magnitude','FontSize',12);
+
+subaxis(3,3,5)
+plot(H2,'-o');hold on;
+plot(HPCA2,'-x'); 
+title(num2str(Dist2))
+
+subaxis(3,3,6)
+imagesc(C_mtx2)
+title(num2str(PredDist2))
+
+
+subaxis(3,3,7)
+plot(X3);
+xlabel('Time','FontSize',12);
+ylabel('Magnitude','FontSize',12);
+
+subaxis(3,3,8)
+plot(H3,'-o');hold on;
+plot(HPCA3,'-x'); 
+xlabel('Time','FontSize',12);
+title(num2str(Dist3))
+
+subaxis(3,3,9)
+imagesc(C_mtx3)
+title(num2str(PredDist3))

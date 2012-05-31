@@ -1,0 +1,5 @@
+function [T]=ConstructToeplitzfromDelays(delays,h)
+S=length(delays);
+Maxd=max(abs(delays));
+
+for i=1:S

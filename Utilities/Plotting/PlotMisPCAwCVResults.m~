@@ -1,0 +1,34 @@
+function PlotMisPCAwCVResults(Results)
+
+figure
+subplot(3,Results.kopt,[1:Results.kopt])
+imagesc(Results.CVErr)
+xlabel('\beta')
+ylabel('f')
+title('CV error results')
+
+colormap=hsv(Results.kopt);
+for k=1:Results.kopt
+    subplot(3,Results.kopt,Results.kopt+k)
+    
+    plot(circshift(Results.F(:,k),Results.d{k}(1)),'color',colormap(k,:),'Linewidth');
+    %f=length(Results.d);
+    % legendstr=cell(f,1);
+    % for i=1:f
+    %    legendstr{i}=['Factor ',num2str(i)];
+    % end
+    % legend(legendstr)
+    xlabel('Time')
+    ylabel('Magnitude')
+    axis tight;
+    title(['MisPCA Factor ',num2str(k)])
+end
+subplot(3,Results.kopt,2*Results.kopt+ [1:Results.kopt])
+f=length(Results.d);
+colors=hsv(f);
+for i=1:f
+   plot(Results.d{i},'color',colors(i,:)); hold on; 
+end
+xlabel('Subject')
+ylabel('Time')
+title('MisPCA delays')

@@ -1,0 +1,32 @@
+% addpath(genpath('/net/adrian/w/atibaup/Matlab lib/SeDuMi_1_1'))
+% addpath(genpath('/net/adrian/w/atibaup/Matlab lib/yalmip'))
+% addpath(genpath('/net/adrian/w/atibaup/Matlab lib/mosek/6/toolbox/r2007a'))
+
+addpath(genpath('/usr/local/SeDuMi_1_21'))
+addpath(genpath('/usr/local/yalmip'))
+addpath(genpath('/usr/local/mosek/5/toolbox/r2007a'))
+
+%addpath(genpath('/usr/local/mosek/6/toolbox/r2007a'))
+addpath(genpath('/n/adrian/w/atibaup/SALSA'))
+FilesDir='/n/adrian/w/atibaup/Overlapping Group Lasso/';
+path(path,strcat(FilesDir,'Utilities'))
+path(path,strcat(FilesDir,'Utilities/SparseGLasso'))
+path(path,strcat(FilesDir,'Utilities/ActiveSet'))
+path(path,strcat(FilesDir,'Utilities/graph'))
+path(path,strcat(FilesDir,'Test Scripts'))
+%path(path,'/net/adrian/w/atibaup/SALSA')
+FilesDir='/n/adrian/w/atibaup/Overlapping Group Lasso/PHD Analyses/';
+%FilesDir='/net/adrian/w/atibaup/Overlapping Group Lasso/'
+path(path,strcat(FilesDir,'Utilities'))
+%options=sdpsettings('solver','sedumi','verbose',1);
+path(path,genpath('./Utilities'))
+path(path,'~/PhD/Ordinal Dictionary Learning/Utilities')
+
+
+DataDir='/n/adrian/w/atibaup/PHD Project/Group Lasso/data/Tutorial/MatFiles/';
+addpath(genpath('/n/adrian/w/atibaup/PHD Project/Group Lasso/data/Tutorial/Utilities'))
+load(strcat(DataDir,'data'));
+load(strcat(DataDir,'x568DEGenes'));
+DataFileName='data'
+
+addpath(genpath('../../Utilities/'))

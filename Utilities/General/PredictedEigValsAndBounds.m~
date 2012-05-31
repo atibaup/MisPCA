@@ -1,0 +1,15 @@
+function [PredictedEval, LB,UB]=PredictedEigValsAndBounds(h, theta, delays,c)
+
+            [T]=ConstructToeplitzfromDelays_NonRepeated(unique(delays),(thetaVec(k))*h);
+            T=1/(S)*T; 
+            [C]=CountsMatrix(delays);
+            rh=T(1,:);
+            [PredictedEval,eigMaxT]=EigValTheoretical(diag(sqrt(C))*T*diag(sqrt(C)),c,delays);
+            [T]=ConstructToeplitzfromDelays(delays,theta*h);
+% T=1/(S)*T;
+% rh=T(1,:);
+% [PredictedEval,eigMaxT]=EigValTheoretical(1/max(delays)*T,c,delays);
+% compute bounds
+[LB,UB]=ToeplitzEigMaxBounds(rh);
+LB=1/max(delays)*LB;
+UB=1/max(delays)*UB;

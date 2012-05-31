@@ -1,0 +1,20 @@
+function [Res,Sigma,Fadj]=ComputeResidual_v3(dopt,Lambdas,F,Sigma,Masks)
+S=length(Sigma);
+n=size(Masks{1},1);
+p=size(Sigma{1},2);
+k=size(F,2);
+figure
+Res=cell(S,1);
+for i=1:S
+    Fadj=zeros(n,k);
+    for j=1:k
+         Fadj(:,j)= circshift(F(:,j),dopt{j}(i));
+    end
+    warning off;
+    %Fadj=Fadj(Masks{i}(:,1)==1,:);
+    P=eye(size(Fadj,1))-Fadj*((Fadj'*Fadj)\Fadj');
+    subplot(S,1,i)
+    plot(P*X{)
+    Sigma{i}=P*Sigma{i}*P';
+    Sigma{i}=1/2*(Sigma{i}+Sigma{i}');
+end

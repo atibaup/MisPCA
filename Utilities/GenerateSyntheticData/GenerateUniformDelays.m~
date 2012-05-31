@@ -1,0 +1,5 @@
+function [delays]=GenerateUniformDelays(dmax,spacing,S)
+
+if round(S/(dmax+1))==S/(dmax+1)
+    delays=kron(0:dmax)   
+end

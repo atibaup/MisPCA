@@ -1,0 +1,19 @@
+function [LB,UB,LB2]=ToeplitzEigMaxBounds(h,n)
+
+h=h(:)';
+has=1/2*(h+fliplr(h(1:end)));
+symmh=[h,fliplr(h(2:end-1))];
+W=dftmtx(2*n-2);
+
+predict=real(W*symmh');
+W2=dftmtx(n-1);
+hasF=real(sort(W2*has(1:n-1)','descend'));
+predict=sort(predict,'descend');
+UB=predict(1);
+v=has(1:end);
+v(end)=sqrt(v(end));
+LB=max(0,predict(1)- hasF(1)-norm(v)^2);
+
+Tas=toeplitz(has);
+LB2=predict(1)-eigs(Tas,1,'lm');
+

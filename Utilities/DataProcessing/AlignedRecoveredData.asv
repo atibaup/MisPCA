@@ -1,0 +1,43 @@
+function [AdjX]=AlignedRecoveredData(X,A_o,A_no,F,M_no,dhat,ChangePoint,RefFactor)
+
+S=length(A_o);
+for i=1:S
+    X{i}=1/max(max(X{i}))*X{i};
+end
+Nfact=size(A_o{1},1)+1;
+n=size(M_no,1);
+n_F=size(F,1);
+epsilon=n_F-n;
+epsilon1=round(epsilon/2);
+epsilon2=epsilon-epsilon1;
+f_no=size(M_no,2);
+p=size(A_o{1},2);
+
+[maxval indx]=max(F(:,RefFactor));
+diff=indx-epsilon1-ChangePoint;
+
+
+%% DEtermine feature timepoints
+Timeref=ChangePoint;
+t=zeros(S,1);
+for j=1:S
+    t(j)=mod(dhat{j}(RefFactor)+Timeref,n_F)-epsilon1;
+end
+tmin=min(t)
+
+AdjX=cell(S,1);
+for j=1:S
+    AdjustedDelays=mod(dhat{j}-(t(j)-tmin),n_F); %mod(dhat{j}-min(dhat{j})+1,16); %ceil(mean(dhat{j}))
+    AdjX{j}=1/max(max(RecoveredX(A_o{j},A_no{j},F,M_no,AdjustedDelays)))*RecoveredX(A_o{j},A_no{j},F,M_no,AdjustedDelays);
+end
+ConcAdjX=[];
+for j=1:S
+    ConcAdjX=[ConcAdjX AdjX{j}];
+end
+figure
+for i=1:length(X)
+    subplot(1,length(AdjX),i)
+    plot(AdjX{i});
+    title(strcat('Observation :',num2str(i)))
+end
+

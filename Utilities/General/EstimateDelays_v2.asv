@@ -1,0 +1,30 @@
+function [ F, dopt ] = EstimateDelays_v2( X,dmax )
+%ESTIMATEDELAYS Summary of this function goes here
+%   Detailed explanation goes here
+S=length(X);
+Set=zeros(S,2);
+Set(:,2)=dmax;
+[Grid Ngrid]=CreateNdimGrid_OPPPCA(Set);
+Cost=zeros(Ngrid,1);
+Ngrid=Ngrid
+opts.issym=1;
+opts.isreal=1;
+opts.tol=1e-2;
+opts.disp=0;
+for i=1:Ngrid
+    if mod(i,1000)==0
+       disp(strcat('Iteration ',num2str(i),'/',num2str(Ngrid))) 
+    end
+    d=Grid(i,:);
+   [X_a]=CreateAlignedX(X,d);
+   %X_aX_at=X_a*X_a';
+   [F,lambda]=eigs(X_a,1,'lm',opts);
+   % Cost(i)=trace(X_aX_at)-lambda;
+   Cost(i)=lambda;
+end
+figure
+plot
+[minC, Indx]=min(Cost);
+dopt=Grid(Indx,:);
+end
+

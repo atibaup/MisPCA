@@ -1,0 +1,37 @@
+function [Res,Sigma,SigmaAv,MaxEig,NormResidual]=ComputeResidual_v2(dopt,F,X,Sigma,lambdamax)
+S=size(X,2);
+n=size(X{1},1);
+p=size(X{1},2);
+k=size(F,2);
+%figure
+Res=cell(S,1);
+Fadj=zeros(n,1);
+NormResidual=0;
+% for i=1:S
+% Fadj=zeros(n,k);
+%     for j=1:k
+%          [T]=CreateTranslationMatrix(dopt{j}(i),n);
+%          Fadj(:,j)= T*F(:,j);
+%     end
+%     warning off;
+%     P=eye(n)-Fadj*((Fadj'*Fadj)\Fadj');
+%     Res{i}=P*X{i};
+%     NormResidual=NormResidual+norm(Res{i},'fro');
+% %     subplot(S,1,i)
+% %     plot(Res{i});
+% end
+SigmaAv=zeros(n);
+MaxEig=zeros(S,1);
+opts.disp=0;
+for i=1:S
+    for j=1:k
+         [T]=CreateTranslationMatrix(dopt{j}(i),n);
+         Fadj(:,j)= T*F(:,j);
+    end
+    Sigma{i}= Sigma{i}-Fadj*diag(lambdamax)*Fadj';
+    Sigma{i}=1/2*(Sigma{i}+Sigma{i}');
+    %[T]=CreateTranslationMatrix(dopt(i),n);
+    %Sigma{i}=SigmaO{i}-T*F*F'*T';
+    SigmaAv=SigmaAv+1/S*Sigma{i};
+    MaxEig(i)=eigs(Sigma{i},1,'lm',opts);
+end

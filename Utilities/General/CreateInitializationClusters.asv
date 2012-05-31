@@ -1,0 +1,37 @@
+function [Sigma,X,M,Clusters]=CreateInitializationClusters(X,M,p)
+S=length(X);
+n=size(X{1},1);
+Sigma=cell(S,1);
+SigmaVec=zeros(S,n^2);
+
+for k=1:S
+    X{k}=X{k}-repmat(mean(X{k},2),1,p);
+    M{k}=M{k}-repmat(mean(M{k},2),1,p);
+    Sigma{k}=X{k}*X{k}';
+    SigmaVec(k,:)=vec(Sigma{k})';
+end
+if S>1
+    d = pdist(SigmaVec);
+    z = linkage(d);
+    c = cluster(z,'maxclust',round(S/2));
+    Nclust=length(unique(c));
+    MaxSize=0;
+    cNew=[];
+    NClustNew=0;
+    kClust=1;
+    for k=1:Nclust
+        if length(find(c==k))>2
+           for i=1:ceil(length(find(c==k))/2)
+               
+        end
+    end
+    
+    MaxSize=max(SizeClust);
+    Clusters=zeros(Nclust,MaxSize);
+    for k=1:Nclust
+        Clusters(k,1:length(find(c==k)))=find(c==k);
+    end
+else
+    MaxSize=1;
+    Clusters=1;
+end

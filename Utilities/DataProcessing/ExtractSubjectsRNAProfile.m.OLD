@@ -1,0 +1,35 @@
+function [X,Samples,y,RowIds,Genes,GenesAffy,IndxCommon]=ExtractSubjectsRNAProfile(sample,subjectIDs,Virus,Genes,FigureOnOff,dmax,SubsMeanOnOff)
+[RowIds,Genes]=FindGenesRows(Genes,sample.blood.RNA.rownames);
+GenesAffy=sample.rownames_affy(RowIds);
+
+for i=1:length(subjectIDs)
+    [SamplesAux]=ExtractSubjectRNASamples(sample,subjectIDs(i),Virus);
+    ColIds=SamplesAux.Samples;
+    X{i}=sample.blood.RNA.data(RowIds,ColIds)';
+    if i==1
+        CommonTimes=SamplesAux.SampleTimes;
+    end
+    [CommonTimes,IndxCommon,IB]=intersect(CommonTimes,SamplesAux.SampleTimes);
+    n=size(X{i},1);
+    p=size(X{i},2);
+    for j=1:p
+        X{i}(:,j)=1/sum(X{i}(:,j)).*X{i}(:,j);
+    end
+    if SubsMeanOnOff
+        X{i}=X{i}-repmat(mean(X{i},2),1,p);
+    end
+    X{i}=1/max(max(X{i}))*X{i};
+    Samples{i}=SamplesAux;
+    if FigureOnOff==1
+       figure
+       plot(X{i});
+    end
+    y(i)=SamplesAux.Label(length(SamplesAux.Label));
+end
+
+for i=1:length(subjectIDs)
+    [CommonTimes,Indx]=intersect(CommonTimes,Samples{i}.SampleTimes);
+    Samples{i}.SampleTimes=CommonTimes;
+    X{i}=X{i}(Indx,:);
+    X{i}=[repmat(X{i}(1,:),dmax,1); X{i}; repmat(X{i}(length(CommonTimes),:),dmax,1)];
+end

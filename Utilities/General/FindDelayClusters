@@ -1,0 +1,28 @@
+function [Clusters]=FindDelayClusters(S,n_f,p,X,)
+
+VecData=zeros(S,n_f*p);
+for i=1:S
+    VecData(i,:)=X{i}(:);
+end
+figure
+imagesc(VecData)
+
+T=clusterdata(VecData,'maxclust',k,'distance','correlation','linkage','complete');
+
+[Vals,indxsorted]=sort(T,'ascend');
+figure
+subplot(1,2,1)
+imagesc(VecData(indxsorted,:))
+subplot(1,2,2)
+imagesc(Vals)
+
+for i=1:k
+    Indx=find(T==i);
+    figure
+    for j=1:length(Indx)
+       subplot(length(Indx),1,j)
+       plot(X{Indx(j)});hold on;
+       plot(M{Indx(j)},'LineWidth',3);hold on;
+    end
+    Clusters{i}=Indx;
+end

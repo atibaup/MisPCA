@@ -1,0 +1,39 @@
+function [Err,h]=OriginalVSReconstructed(dopt,F,X,M,Padding,Genes,Subjects,figOnOff,Title,GeneNames,OnsetTimes)
+S=length(Subjects);
+n=size(X{1},1);
+p=size(X{1},2);
+k=size(F,2);
+if figOnOff
+h=figure('Name',strcat('Original VS Rec',Title));
+end
+Nplot=1;
+Err=0;
+for i=1:S
+    Fadj=zeros(n,k);
+    for j=1:k
+         [T]=CreateTranslationMatrix(dopt{j}(Subjects(i)),n);
+         Fadj(:,j)= T*F(:,j);
+    end
+    Xr{i}=Fadj*inv(Fadj'*Fadj)*Fadj'*X{Subjects(i)};
+    if figOnOff
+    subplot(ceil(S/2),4,Nplot)
+    plot(M{Subjects(i)}(1+Padding:(n-Padding),Genes)); hold on
+    stem(OnsetTimes(Subjects(i)),max(max(abs(Xr{i}(1+Padding:(n-Padding),Genes)))),'ro','LineWidth',3); hold on
+    title(strcat('Original'))
+    axis tight;
+     subplot(ceil(S/2),4,Nplot+1)  
+     plot(Xr{i}(1+Padding:(n-Padding),Genes));hold on;
+     plot(OnsetTimes(Subjects(i)),max(max(abs(Xr{i}(1+Padding:(n-Padding),Genes)))),'ro','LineWidth',3); hold on
+    end
+     Err=Err+1/(S*n)*norm(Xr{i}-M{Subjects(i)},'fro')^2;
+    if figOnOff
+        title(strcat('Reconstructed, Err:', num2str(norm(M{Subjects(i)}-Xr{i},'fro'))))
+    end
+    if nargin==10
+        if i==1
+       legend(GeneNames); 
+        end
+    end
+     axis tight;
+     Nplot=Nplot+2;
+end

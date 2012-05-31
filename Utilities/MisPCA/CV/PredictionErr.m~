@@ -1,0 +1,23 @@
+function [Err,Merr]=PredictionErr(X,Masks,OmegaT,Xhat)
+
+S=length(X);
+
+Err=zeros(S,1);
+
+for i=1:S
+
+    MaskIndx=(Masks{i}(:,1)==1);
+    Xor=X{i}(MaskIndx,:);
+    Xrec=Xhat{i}(MaskIndx,:);   
+    
+    TestIndx=(OmegaT{i}(MaskIndx==1,:)==1);
+    
+    Err(i)=norm(Xor(TestIndx)-Xrec(TestIndx),'fro')^2/norm(Xor(TestIndx),'fro')^2;
+    
+    figure
+    subplot(2,1,1)
+    plot(Xor.*(OmegaT{i}==1))
+    subplot(2,1,2)
+    plot(Xrec.*(OmegaT{i}==1))
+end
+Merr=mean(Err);

@@ -1,0 +1,11 @@
+function [OnsetTimes]=OnsetTimesFromClockTimes(Masks,TimeVec,OnsetTimesClock)
+S=length(OnsetTimesClock);
+for i=1:S
+    size(find(Masks{i}==1))
+    size(TimeVec)
+    TimeVecSubj=TimeVec(Masks{i}==1);
+    TimeVecSubj=
+    [minVal,minIndx]=min(abs(TimeVecSubj-OnsetTimesClock(i)));
+    OnsetTimes(i)=minIndx;
+end
+

@@ -1,0 +1,175 @@
+%% predicted versus empirical bias
+
+addpath(genpath('../../Utilities'))
+clear all;
+
+if matlabpool('size') == 0
+    matlabpool open 4;
+end
+
+
+Nrndm=4*5;
+
+
+Spacing=1;
+p=300;
+
+dmax=p-1;
+n=500;
+f_o=3;
+
+NpointsSNR=10;
+NpointsN=4;
+SNR=round(linspace(-10,40,NpointsSNR));
+dmaxVec=round(linspace(1,dmax,NpointsN));
+MissingTPRatio=0;
+FigOnOff=0;
+
+
+%% Initialization, r=p/100
+
+Bias=zeros(NpointsN,NpointsSNR,Nrndm);
+PredictedBias=zeros(NpointsN);
+r=p/100;
+[~,~,H]=GenerateFMisPCAData(p,1,n,f_o,SNR(1),r,dmax,Spacing,[],[]);
+
+%% Experiments r=p/100
+eigsRh1=cell(NpointsN,1);
+for l=1:NpointsN
+    fprintf('\n dmax=%d \n',dmaxVec(l))
+    [~,~,~,d]=GenerateFMisPCAData(p,1,n,f_o,SNR(1),r,dmaxVec(l),Spacing,[],H);
+    [~,~,PredictedBias(l),~,~,eigsRh1{l}]=SubspaceDistanceAndPredictedDistance(H,H,d);
+
+    for k=1:NpointsSNR
+        fprintf(' SNR=%2.2g ',SNR(k))
+        % Parallelizable for (deactivated for OCTAVE compatibility) 
+ for i=1:Nrndm
+            %% Rank-F signal
+            [~,S,~,~]=GenerateFMisPCAData(p,1,n,f_o,SNR(k),r,dmaxVec(l),Spacing,[],H);           
+            [FPCA,Lambda]=eigs(S,f_o);
+            Bias(l,k,i)=2*(f_o-trace((FPCA*FPCA')*(H*H')));
+        end
+    end
+end
+
+%% Initialization, r=p/10
+
+Bias2=zeros(NpointsN,NpointsSNR,Nrndm);
+PredictedBias2=zeros(NpointsN);
+r=p/10;
+[~,~,H2]=GenerateFMisPCAData(p,1,n,f_o,SNR(1),r,dmax,Spacing,[],[]);
+
+%% Experiments r=p/10
+
+for l=1:NpointsN
+    fprintf('\n dmax=%d \n',dmaxVec(l))
+    [~,~,~,d]=GenerateFMisPCAData(p,1,n,f_o,SNR(1),r,dmaxVec(l),Spacing,[],H2);
+    [~,~,PredictedBias2(l),~,~,eigsRh2{l}]=SubspaceDistanceAndPredictedDistance(H2,H2,d);
+
+    for k=1:NpointsSNR
+        fprintf(' SNR=%2.2g ',SNR(k))
+        % Parallelizable for (deactivated for OCTAVE compatibility) 
+ for i=1:Nrndm
+            %% Rank-F signal
+            [~,S,~,~]=GenerateFMisPCAData(p,1,n,f_o,SNR(k),r,dmaxVec(l),Spacing,[],H2);           
+            [FPCA,Lambda]=eigs(S,f_o);
+            Bias2(l,k,i)=2*(f_o-trace((FPCA*FPCA')*(H2*H2')));
+        end
+    end
+end
+
+%% Initialization, r=p/2
+Bias3=zeros(NpointsN,NpointsSNR,Nrndm);
+PredictedBias3=zeros(NpointsN);
+r=p/2;
+[~,~,H3]=GenerateFMisPCAData(p,1,n,f_o,SNR(1),r,dmax,Spacing,[],[]);
+
+%% Experiments r=p/2
+
+for l=1:NpointsN
+    fprintf('\n dmax=%d \n',dmaxVec(l))
+    [~,~,~,d]=GenerateFMisPCAData(p,1,n,f_o,SNR(1),r,dmaxVec(l),Spacing,[],H3);
+    [~,~,PredictedBias3(l),~,~,eigsRh3{l}]=SubspaceDistanceAndPredictedDistance(H3,H3,d);
+
+    for k=1:NpointsSNR
+        fprintf(' SNR=%2.2g ',SNR(k))
+        % Parallelizable for (deactivated for OCTAVE compatibility) 
+ for i=1:Nrndm
+            %% Rank-F signal
+            [~,S,~,~]=GenerateFMisPCAData(p,1,n,f_o,SNR(k),r,dmaxVec(l),Spacing,[],H3);           
+            [FPCA,Lambda]=eigs(S,f_o);
+            Bias3(l,k,i)=2*(f_o-trace((FPCA*FPCA')*(H3*H3')));
+        end
+    end
+end
+
+
+%% Plot results vs n number of samples)
+
+h=figure;
+
+subaxis(NpointsN+1,3,1,'Spacing',0.07,'MR',.05,'ML',0.05); 
+plot(H,'LineWidth',2)
+xlabel('Time','FontSize',12);
+ylabel('Magnitude','FontSize',12);
+title('Small Support','FontSize',12) ;
+    
+subaxis(NpointsN+1,3,2,'Spacing',0.07,'MR',.05,'ML',0.05); 
+plot(H2,'LineWidth',2)
+xlabel('Time','FontSize',12);
+ylabel('Magnitude','FontSize',12);
+title('Medium Support','FontSize',12) ;
+    
+subaxis(NpointsN+1,3,3,'Spacing',0.07,'MR',.05,'ML',0.05); 
+plot(H3,'LineWidth',2)
+xlabel('Time','FontSize',12);
+ylabel('Magnitude','FontSize',12);
+title('Large Support','FontSize',12) ;
+
+IndxPlot=1;
+titlestr={'1','1/3 p','2/3 p','p-1'};
+for l=1:NpointsN
+    subaxis(NpointsN+1,3,3+IndxPlot,'Spacing',0.07,'MR',.05,'ML',0.05); 
+    plot(SNR,squeeze(mean(Bias(l,:,:),3)),'-b','LineWidth',2); hold on;
+    plot(SNR,PredictedBias(l)*ones(length(SNR),1),'-r','LineWidth',2); hold on;
+    if l==1; legend('Prediction','Empirical'); end;
+    for k=1:NpointsSNR
+     plot(SNR(k),squeeze(Bias(l,k,:)),'.b'); hold on;
+    end
+    axis([min(SNR),max(SNR),0,6.1]);
+    title(['dmax=',titlestr{l}],'FontSize',12) ;
+    grid on;
+    ylabel('Bias');
+    if l==NpointsN;xlabel('SNR','FontSize',12);end;
+    
+    subaxis(NpointsN+1,3,3+IndxPlot+1,'Spacing',0.07,'MR',.05,'ML',0.05); 
+    plot(SNR,squeeze(mean(Bias2(l,:,:),3)),'-b','LineWidth',2); hold on;
+    plot(SNR,PredictedBias2(l)*ones(length(SNR),1),'-r','LineWidth',2); hold on;
+
+    for k=1:NpointsSNR
+        plot(SNR(k),squeeze(Bias2(l,k,:)),'.b'); hold on;
+    end
+    axis([min(SNR),max(SNR),0,6.1]);
+    title(['dmax=',titlestr{l}],'FontSize',12) ;    grid on;
+    ylabel('Bias');
+    if l==NpointsN;xlabel('SNR','FontSize',12);end;
+    
+    subaxis(NpointsN+1,3,3+IndxPlot+2,'Spacing',0.07,'MR',.05,'ML',0.05); 
+    plot(SNR,squeeze(mean(Bias3(l,:,:),3)),'-b','LineWidth',2); hold on;
+    plot(SNR,PredictedBias3(l)*ones(length(SNR),1),'-r','LineWidth',2); hold on;
+    for k=1:NpointsSNR
+        plot(SNR(k),squeeze(Bias3(l,k,:)),'.b'); hold on;
+    end
+    axis([min(SNR),max(SNR),0,6.1]);
+    title(['dmax=',titlestr{l}],'FontSize',12) ;
+    grid on;
+    ylabel('Bias');
+    if l==NpointsN;xlabel('SNR','FontSize',12);end;
+    
+    IndxPlot=IndxPlot+3;
+end
+
+saveas(h,['Figures/Bias_PCA_',date,'.fig'],'fig');
+saveas(h,['Figures/Bias_PCA_',date,'.eps'],'eps');
+
+save(['Results/Bias_PCA_',date,'.mat'])

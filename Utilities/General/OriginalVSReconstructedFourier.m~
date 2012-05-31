@@ -1,0 +1,65 @@
+function [Err,h]=OriginalVSReconstructedFourier(dopt,F,X,For,dor,Padding,Genes,Subjects,figOnOff,Title,GeneNames,OnsetTimes)
+S=length(Subjects);
+n=size(X{1},1);
+p=size(X{1},2);
+k=size(F,2);
+if figOnOff
+h=figure('Name',strcat('Original VS Rec',Title));
+end
+DFT=1/sqrt(n)*dftmtx(n);
+DFTinv=conj(DFT);
+Nplot=1;
+Err=0;
+for i=1:S
+    %     Fadj=zeros(n,k);
+    %     for j=1:k
+    %         D=diag(exp(-1i*2*pi/n*[0:n-1]*dopt(i)));
+    %         Fadj(:,j)=D*DFT*F(:,j);
+    %     end
+    % Fadj=(DFTinv*Fadj);
+    %Xr{i}=(Fadj*((Fadj'*Fadj)\(Fadj'*X{Subjects(i)})));
+    if figOnOff
+        Dor=diag(exp(-1i*2*pi/n*[0:n-1]*dor{i}(1)));
+        Hor=DFTinv*Dor*DFT*For(:,1);
+        Dopt=diag(exp(-1i*2*pi/n*[0:n-1]*dopt{i}(1)));
+        Hopt=DFTinv*Dopt*DFT*F(:,1);
+        
+        subplot(S,4,Nplot)
+        plot(real(Hor)); hold on
+        title(strcat('Original (mod)'))
+        axis tight;
+        
+        subplot(S,4,Nplot+1)
+        plot(real(Hopt));hold on;
+        plot(OnsetTimes(Subjects(i)),max(max((Xr{i}(1+Padding:(n-Padding),Genes)))),'ro','LineWidth',3); hold on
+        title(strcat('Original (mod)'))
+        axis tight;
+        
+        subplot(S,4,Nplot+2)
+        plot(angle(Hor)); hold on
+        plot(OnsetTimes(Subjects(i)),max(max((Xr{i}(1+Padding:(n-Padding),Genes)))),'ro','LineWidth',3); hold on
+        title(strcat('Original (phase)'))
+        axis tight;
+        
+        subplot(S,4,Nplot+3)
+        plot(angle(Hopt));hold on;
+        plot(OnsetTimes(Subjects(i)),max(max((Xr{i}(1+Padding:(n-Padding),Genes)))),'ro','LineWidth',3); hold on
+        title(strcat('Original (mod)'))
+        axis tight;
+        
+        Err=Err+1/(S)*norm(Hopt-Hor},'fro')^2;
+    end
+    %     if figOnOff
+    %         title(strcat('Reconstructed (mod), Err:', num2str(norm(M{Subjects(i)}-Xr{i},'fro'))))
+    %     end
+    %     if figOnOff
+    %         title(strcat('Reconstructed (phase), Err:', num2str(norm(M{Subjects(i)}-Xr{i},'fro'))))
+    %     end
+    if nargin==11
+        if i==1
+            legend(GeneNames);
+        end
+    end
+    axis tight;
+    Nplot=Nplot+4;
+end

@@ -1,0 +1,46 @@
+function [Options,OnsetTimes,Labels]=LoadSymptomsTable(SxOrASx,Virus,OldOrNew,Symptoms)
+N=length(Symptoms.Virus);
+Found=0;
+for i=1:N
+    if strcmp(Symptoms.Virus{i},Virus)
+        if strcmp(Symptoms.OldOrNew{i},Virus)
+           if ~isempty(Symptoms.SxSubjects{i})
+              Found=1; 
+              if SxOrASx==1
+                Options.SxSubjectIDs=Symptoms.SxSubjects{i}(1,:);
+              else
+                  Options.SxSubjectIDs=1:
+              end
+              
+           end
+        end
+    end
+end
+Options.S=length(Options.SxSubjectIDs);
+
+if SxOrASx==1
+    if strcmp(Virus,'Z')
+        Options.SxSubjectIDs=[1 5 6 7 8 10 12 13 15];
+    elseif strcmp(Virus,'W')
+        Options.SxSubjectIDs=[2,3,6,7,8,9,10,12,13,17,20,21];
+    end
+else
+    if strcmp(Virus,'Z')
+        Options.SxSubjectIDs=setdiff(1:17,[1 5 6 7 8 10 12 13 15]);
+    elseif strcmp(Virus,'W')
+        Options.SxSubjectIDs=setdiff(1:24,[2,3,6,7,8,9,10,12,13,17,20,21]);
+    end
+end
+ if strcmp(Virus,'Z')
+    % H3N2
+    Labels= [0 1 1 1 0 0 0 0 1 0 1  0 0 1 0 1 1];
+    OnsetTimes= [7, 1,1,1, 8,6,8,10,1,11,1,8,10,1,12,1,1];
+    sample.excelmat_clock(1,OnsetTimes(OnsetTimes~=1));
+    OnsetTimes=OnsetTimes(Labels==0);
+ elseif strcmp(Virus,'W')
+    %H1N1
+    Labels=ones(24,1);
+    OnsetTimes= [1,4,1,1,12,8,9,11,11,1,1,8,11,1,11,1,10,1,1,9,12,1,1,1];
+    Labels(OnsetTimes~=1)=0;
+    OnsetTimes=OnsetTimes(Labels==0);
+ end

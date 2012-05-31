@@ -1,0 +1,14 @@
+TODOs for MisPCA package
+-------------------------
+
+
+DONE:
+
+ - Dependency tree building
+ - iterative script checking and reporting
+
+TODO:
+
+ - Check and run scripts in Experiments/
+ - Clean up unnecessary Experiments scripts
+ - verify ONLY IMPORT FUNCTIONS from Utilities/ and not OLD!!

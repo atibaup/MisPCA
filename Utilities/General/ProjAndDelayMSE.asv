@@ -1,0 +1,14 @@
+function [dMSE,ProjMSE]=ProjAndDelayMSE(F_o,d_o,Fhat,dhat)
+
+n=size(F_o,1);
+S=length(d_o);
+for i=1:S
+    dvec(i)=d_o{i};
+end
+dvec=dvec(:)-min(dvec);
+dhat=dhat(:)-min(dhat);
+dMSE=1/S*norm((dvec-min(dvec))-(dhat-min(dhat)))^2;
+ProjMSE=0;
+for i=1:S
+ProjMSE=ProjMSE+1/S*abs((CreateTranslationMatrix(dvec(i),n)*F_o)'*(CreateTranslationMatrix(dhat(i),n)*Fhat));
+end

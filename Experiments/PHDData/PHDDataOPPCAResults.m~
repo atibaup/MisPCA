@@ -1,0 +1,197 @@
+%% Result interpretation
+AddPathsArcadelt
+clear all
+close all
+load Results/OPPCA_onlySx_05_Apr_2011_p=500_Z_Old.mat
+Options=Results.Options;
+Virus=Options.Virus;
+OldOrNew=Options.OldOrNew;
+TypeFile='Sx';
+k=1;
+figure
+for i=1:Options.NpointsBeta
+    subplot(Options.NpointsBeta,2,k)
+    plot(Results.F_MisPCA{i})
+    subplot(Options.NpointsBeta,2,k+1)
+    plot(Results.Lambdas{i})
+    k=k+2;
+end
+BetaPoint=input('BetaPoint?')
+figure
+plot(Results.Lambdas{BetaPoint},'LineWidth',2)
+xlabel('r')
+ylabel('Eigenvalues')
+
+dopt_MisPCA=Results.dopt_MisPCA{BetaPoint};
+F_MisPCA=Results.F_MisPCA{BetaPoint};
+Lambdas=Results.Lambdas{BetaPoint};
+X=Results.Data.X;
+Masks=Results.Data.Masks;
+OnsetTimes=Results.Data.OnsetTimes;
+TimeVecOr=Results.Data.TimeVecOr;
+Genes=Results.Data.Genes;
+GenesAffy=Results.Data.GenesAffy;
+GenesPV=Results.Data.GenesPv;
+FixedDelaysOnOff=Options.FixedDelaysOnOff;
+F_PCA=Results.F_PCA;
+for i=1:Options.k
+    d_PCA{i}=zeros(Options.S,1);
+end
+
+IntGenes{1}.Names={'CD177','CD72','OAS1','OASL','ADA','CCR1','LY6E','CD1C','RPL3','CX3CR1','ALDH5A1','ORM1','HOXA6','RPL11','RPL5','C6orf48','CCR7'};
+IntGenes{1}.Ids=FindGenesRows(IntGenes{1}.Names,Genes);
+
+[Err,h]=OriginalVSReconstructed(dopt_MisPCA,F_MisPCA,X,X,Masks,Options.Padding,IntGenes{1}.Ids,1:Options.S,1,...
+    Options.SxSubjectIDs,'',IntGenes{1}.Names,OnsetTimes,Lambdas,TimeVecOr)
+
+ChosenFactors=1:Options.k
+PlotEstimatedFactors(F_MisPCA,dopt_MisPCA,Lambdas,Options,OnsetTimes,ChosenFactors,TimeVecOr);
+RefFactor=1;
+ChosenFactors=1:Options.k
+[AdjustedDelays]=PlotEstimatedDelays(X,OnsetTimes,dopt_MisPCA,RefFactor,Options,ChosenFactors);
+
+%% Cluster Analysis on the Aligned Space
+Threshold=0.1;
+NormalizeOnOff=1;
+Nfactors=2
+ChosenFactors=1:Nfactors
+[Load,IntGenes{2},AverageLoad,A_o]=findLoadingsOnAlignedSubspace(X,Masks,F_MisPCA,Lambdas,dopt_MisPCA,...
+                        Options,ChosenFactors,Genes,Threshold,NormalizeOnOff,0);
+
+ChosenFactors=1:Nfactors
+[Err,h]=OriginalVSReconstructed({dopt_MisPCA{ChosenFactors}},F_MisPCA(:,ChosenFactors),X,X,Masks,...
+    Options.Padding,IntGenes{2}.Ids(1:min(100,length(IntGenes{2}.Ids))),[1:Options.S],1,Options.SxSubjectIDs,strcat('MisPCA: Reconstruction on Factors',num2str(ChosenFactors)),...
+    IntGenes{2}.Names(1:min(100,length(IntGenes{2}.Ids))),OnsetTimes,Lambdas(ChosenFactors),TimeVecOr)
+
+ChosenFactors=1:Nfactors
+[Err,h]=OriginalVSReconstructed({d_PCA{ChosenFactors}},F_PCA(:,ChosenFactors),X,X,Masks,...
+    Options.Padding,IntGenes{2}.Ids(1:min(100,length(IntGenes{2}.Ids))),1:Options.S,1,Options.SxSubjectIDs,strcat('PCA: Reconstruction on Factors',num2str(ChosenFactors)),...
+    IntGenes{2}.Names(1:min(100,length(IntGenes{2}.Ids))),OnsetTimes,Lambdas(ChosenFactors),TimeVecOr)
+
+FactorsForClustering=1:Nfactors;%Options.k;
+Indxs=[];
+for i=1:Options.S
+    Aux=zeros(Options.k,1);
+    Aux(FactorsForClustering)=1;
+    Indxs=[Indxs;Aux];
+end
+Indxs=(Indxs==1);
+linkage='complete';
+distance='seuclidean';
+Nclust=8
+GenesForClustering=1:Options.p;
+%GenesForClustering=IntGenes{2}.Ids;
+%% MisPCA-based clustering
+T = clusterdata(AverageLoad(FactorsForClustering,GenesForClustering)','maxclust',Nclust,'distance',distance,'linkage',linkage); % 'median' seuclidean correlation
+ [ImageLoadings,GenesCluster,Err]=ClusterGeneResponses(T,dopt_MisPCA,F_MisPCA,ChosenFactors,Load,...
+                                Genes,GenesPV,X,Masks,Options,Lambdas,TimeVecOr,0);
+ChosenFactors=1:Nfactors;
+ClusterLoadingsOrResponses=1;% 1 or 2
+Showclus=1:Nclust
+[Signature,ClusterMembersMisPCA,XrMisPCA,AlignedDataMisPCA,T1]=TemporalSignatures(T,F_MisPCA(:,ChosenFactors),X,Masks,dopt_MisPCA,Lambdas(ChosenFactors),...
+                GenesForClustering,Genes,GenesAffy,Options,Results.Data.TimeVecOr,ClusterLoadingsOrResponses,FixedDelaysOnOff,Showclus);
+
+%% PCA-based clustering
+[LoadPCA,IntGenes{4},AverageLoadPCA,A_PCA]=findLoadingsOnAlignedSubspace(X,Masks,F_PCA,Lambdas,d_PCA,Options,1:Options.k,Genes,Threshold,NormalizeOnOff,0);
+T_PCA = clusterdata(AverageLoadPCA(FactorsForClustering,GenesForClustering)','maxclust',Nclust,'distance',distance,'linkage',linkage); % 'median' seuclidean correlation
+ClusterLoadingsOrResponses=1;% 1 or 2
+Showclus=1:Nclust;
+[SignaturePCA,ClusterMembersPCA,XrPCA,AlignedData,T2]=TemporalSignatures(T_PCA,F_PCA(:,ChosenFactors),X,Masks,d_PCA,Lambdas(ChosenFactors),...
+                GenesForClustering,Genes,GenesAffy,Options,Results.Data.TimeVecOr,ClusterLoadingsOrResponses,FixedDelaysOnOff,Showclus);
+
+            
+OrderClustersMisPCA=1:Nclust;           
+OrderClustersPCA=1:Nclust;    
+OrderClustersMisPCA=[7,8,6,5]; %[6,5,4,3,1,2];           
+OrderClustersPCA=[4,5,7,8]; %1,2 
+Plot_MisPCAvsPCA_Clusters(T,T_PCA,Signature,SignaturePCA,A_o,A_PCA,TimeVecOr,OrderClustersMisPCA,OrderClustersPCA,Options)
+
+break
+%% Cluster Comparison
+
+
+%% showing that MisPCA clusters are more reliable
+ 
+IntGenes{3}.Names={'PPP2R2A','C20orf19','CHD7','CCR3','GM2A','KIT','KIAA0174','PMM1'};
+IntGenes{3}.Names={'CH13L1','AOC3'};
+IntGenes{3}.Names={'GSTT1','ADORA3','ACP5','EEF1D','C2orf42'};
+IntGenes{3}.Names={'PPP2R2A','C20orf19','CHD7','CCR3','GM2A','KIT','KIAA0174','PMM1'};
+IntGenes{3}.Names={'GYPB','HBD','FECH'};
+IntGenes{3}.Names={'IFI44','LAMP3','HERC5','ISG156'};
+% 
+% IntGenes{3}.Ids=FindGenesRows(IntGenes{3}.Names,Genes);
+% for j=1:length(IntGenes{3}.Ids)
+% [Err,h]=OriginalVSReconstructedAligned(dopt_MisPCA(FactorsForClustering),F_MisPCA(:,FactorsForClustering),X,X,Masks,Options.Padding,IntGenes{3}.Ids(j),1:Options.S,1,...
+%     Options.SxSubjectIDs,'',IntGenes{3}.Names(j),OnsetTimes,Lambdas(FactorsForClustering),TimeVecOr)
+% end
+
+FactorsForPlotting=1:4
+
+IntGenes{3}.Names=ClusterMembersMisPCA{1}.Genes;
+IntGenes{3}.Ids=FindGenesRows(IntGenes{3}.Names,Genes);
+
+[Err,h]=OriginalVSReconstructedAligned(dopt_MisPCA(FactorsForPlotting),F_MisPCA(:,FactorsForPlotting),...
+    X,X,Masks,Options.Padding,IntGenes{3}.Ids,1:Options.S,1,...
+    Options.SxSubjectIDs,'',IntGenes{3}.Names,dopt_MisPCA(FactorsForPlotting(1)),Lambdas(FactorsForPlotting),TimeVecOr)
+
+
+IntGenes{3}.Names=ClusterMembersMisPCA{2}.Genes;
+IntGenes{3}.Ids=FindGenesRows(IntGenes{3}.Names,Genes);
+
+[Err,h]=OriginalVSReconstructedAligned(dopt_MisPCA(FactorsForPlotting),F_MisPCA(:,FactorsForPlotting),...
+    X,X,Masks,Options.Padding,IntGenes{3}.Ids,1:Options.S,1,...
+    Options.SxSubjectIDs,'',IntGenes{3}.Names,dopt_MisPCA(FactorsForPlotting(1)),Lambdas(FactorsForPlotting),TimeVecOr)
+
+IntGenes{3}.Names=ClusterMembersMisPCA{5}.Genes;
+IntGenes{3}.Ids=FindGenesRows(IntGenes{3}.Names,Genes);
+
+[Err,h]=OriginalVSReconstructedAligned(dopt_MisPCA(FactorsForPlotting),F_MisPCA(:,FactorsForPlotting),...
+    X,X,Masks,Options.Padding,IntGenes{3}.Ids,1:Options.S,1,...
+    Options.SxSubjectIDs,'',IntGenes{3}.Names,dopt_MisPCA(FactorsForPlotting(1)),Lambdas(FactorsForPlotting),TimeVecOr)
+
+
+%% Analysis of factor contributing genes
+break
+% 
+% for i=1:length(intAll)
+%     for j=1:length(Genes)
+%         if strcmp(intAll(i),Genes(j))
+%         Id(i)=j;
+%         Pvalue(i)=GenesPV(j);
+%         end
+%     end
+% end
+%     
+    
+
+Threshold=0.1;
+NormalizeOnOff=1;
+ChosenFactors=4
+[Load,IntGenes{3}]=findLoadingsOnAlignedSubspace(X,Masks,F_MisPCA,Lambdas,dopt_MisPCA,Options,ChosenFactors,Genes,Threshold,NormalizeOnOff);
+[Err,h]=OriginalVSReconstructed({dopt_MisPCA{ChosenFactors}},F_MisPCA(:,ChosenFactors),X,X,Masks,...
+    Options.Padding,IntGenes{3}.Ids,1:Options.S,1,Options.SxSubjectIDs,strcat('Reconstruction on Factors',num2str(ChosenFactors)),...
+    IntGenes{3}.Names,OnsetTimes,Lambdas(ChosenFactors),TimeVecOr);
+
+Threshold=0.1;
+NormalizeOnOff=1;
+ChosenFactors=1
+[Load,IntGenes{4}]=findLoadingsOnAlignedSubspace(X,Masks,F_MisPCA,Lambdas,dopt_MisPCA,Options,ChosenFactors,Genes,Threshold,NormalizeOnOff);
+[Err,h]=OriginalVSReconstructed({dopt_MisPCA{ChosenFactors}},F_MisPCA(:,ChosenFactors),X,X,Masks,...
+    Options.Padding,IntGenes{4}.Ids,1:Options.S,1,Options.SxSubjectIDs,strcat('Reconstruction on Factors',num2str(ChosenFactors)),...
+    IntGenes{4}.Names,OnsetTimes,Lambdas,TimeVecOr);
+
+Threshold=0.1;
+NormalizeOnOff=1;
+ChosenFactors=5
+[Load,IntGenes{5}]=findLoadingsOnAlignedSubspace(X,Masks,F_MisPCA,Lambdas,dopt_MisPCA,Options,ChosenFactors,Genes,Threshold,NormalizeOnOff);
+[Err,h]=OriginalVSReconstructed({dopt_MisPCA{ChosenFactors}},F_MisPCA(:,ChosenFactors),X,X,Masks,...
+    Options.Padding,IntGenes{5}.Ids,1:Options.S,1,Options.SxSubjectIDs,strcat('Reconstruction on Factors',num2str(ChosenFactors)),...
+    IntGenes{5}.Names,OnsetTimes,Lambdas,TimeVecOr);
+
+Threshold=0.1;
+NormalizeOnOff=1;
+ChosenFactors=2
+[Load,IntGenes{6}]=findLoadingsOnAlignedSubspace(X,Masks,F_MisPCA,Lambdas,dopt_MisPCA,Options,ChosenFactors,Genes,Threshold,NormalizeOnOff);
+[Err,h]=OriginalVSReconstructed({dopt_MisPCA{ChosenFactors}},F_MisPCA(:,ChosenFactors),X,X,Masks,...
+    Options.Padding,IntGenes{6}.Ids,1:Options.S,1,Options.SxSubjectIDs,strcat('Reconstruction on Factors',num2str(ChosenFactors)),...
+    IntGenes{6}.Names,OnsetTimes,Lambdas,TimeVecOr);

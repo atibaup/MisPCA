@@ -1,0 +1,15 @@
+function []=PlotEstimatedFactors(F_MisPCA,dopt_MisPCA,Options,OnsetTimes)
+h2=figure('Name','Estimated Factors')
+colors=hsv(Options.k)
+markers=['+o.*xs^v']
+for i=1:Options.k
+    subplot(Options.k,1,i)
+%    plot(F_MisPCA(Options.Padding+1:(Options.n-Options.Padding),i),'Color',colors(i,:),'LineWidth',2); hold on;
+    for j=1:Options.S
+        T=CreateTranslationMatrix(dopt_MisPCA{i}(j),Options.n);
+        Fadj=T*F_MisPCA(:,i);
+        plot(Fadj(Options.Padding+1:(Options.n-Options.Padding)),'Color',colors(i,:)); hold on;
+        plot(OnsetTimes(j),max(Fadj(Options.Padding+1:(Options.n-Options.Padding))))
+    end
+    suptitle('Estimated Factors after translation')
+end

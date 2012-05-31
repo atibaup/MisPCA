@@ -1,0 +1,14 @@
+function [Options]=FMisPCA_options(Options,p,n,N_CPU)
+Options.kvec=1:5;
+Options.k=1;
+Options.NpointsBeta=5;
+Options.NCV=N_CPU*2;
+Options.deltaTest=.1;
+Options.Nrndm=4;
+Options.GridSize=1;
+Options.FiguresOnOff=0;
+Options.dmax=round(p/3);
+Options.p=p;
+Options.OP_OnOff=0; % enforce order-preserving or not
+Options.beta=0;
+Options.Hini=[];
