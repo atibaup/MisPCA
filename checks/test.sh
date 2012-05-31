@@ -1,18 +1,5 @@
 #!/bin/bash
 
-#a="test"
-#for i in {1..10}
-#do
-#	if [ $i == 5 ]; 
-#	then
-#		a=$a'\n'
-#	fi
-#	echo $i
-#	a=$a$i
-#	echo $a
-#done
-#echo -e $a > test.txt
-
 functionList=$(cut functionNames.txt -d "/" -f 3,4 | cut -d "/" -f 2 | cut -d "." -f 1 )
 functionList=${functionList// /|}
 
