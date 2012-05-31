@@ -7,9 +7,6 @@ Software requirements:
 
 This code has been tested on GNU Octave Version 3.2.4 with the following packages:
 
-----------------------------------------------------------------------
-Package Name   | Version | Installation directory
----------------+---------+-----------------------
       control *|  1.0.11 |
       
 miscellaneous *|  1.0.11 | 
