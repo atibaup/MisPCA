@@ -86,7 +86,7 @@ for l=1:NpointsDmax
             Options.k=F;
             nvec=randn(p,F);
             hini=theta*Fo+(1-theta)*nvec; 
-            Options.Hini=eigs(hini*hini',F);
+            [Options.Hini,dummy]=eigs(hini*hini',F);
             
             F_AMisPCA=FMisPCA(Sigma,Masks,Options);       
             
@@ -119,7 +119,7 @@ for l=1:NpointsDmax
             Options.k=F;
             nvec=randn(p,F);
             hini=theta*Fo+(1-theta)*nvec; 
-            Options.Hini=eigs(hini*hini',F);
+            [Options.Hini,dummy]=eigs(hini*hini',F);
             
             F_AMisPCA=FMisPCA(Sigma,Masks,Options);       
             
